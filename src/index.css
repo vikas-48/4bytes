@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* Custom Rural-First Variables */
+:root {
+  --color-primary-green: #2E7D32; /* Money/Safe */
+  --color-warning-orange: #EF6C00; /* Khata/Debt */
+  --color-danger-red: #C62828; /* Danger/Overdue */
+  --color-text-high: #121212;
+  --text-xl: 1.5rem;
+  --touch-target-min: 48px;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  user-select: none; /* Prevent selection for app-like feel */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.1s;
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
+}
