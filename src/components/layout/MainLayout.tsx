@@ -1,12 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun } from 'lucide-react';
+import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun, Wifi, WifiOff } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 export const MainLayout: React.FC = () => {
     const [showMenu, setShowMenu] = useState(false);
-    const [darkMode, setDarkMode] = useState(false);
+    const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
     const { language, t, toggleLanguage } = useLanguage();
+
+    useEffect(() => {
+        localStorage.setItem('darkMode', darkMode.toString());
+        document.documentElement.classList.toggle('dark', darkMode);
+    }, [darkMode]);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     const navLinks = [
         { path: '/', label: t.billing, icon: Store },
@@ -19,29 +38,35 @@ export const MainLayout: React.FC = () => {
     ];
 
     return (
-        <div className={`h-screen flex flex-col ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+        <div className={`h-screen flex flex-col ${darkMode ? 'dark bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
             {/* Header */}
-            <header className={`${darkMode ? 'bg-gray-800' : 'bg-primary-green'} text-white p-4 shadow-md z-10 sticky top-0`}>
+            <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-primary-green'} text-white p-4 shadow-md z-10 sticky top-0 border-b`}>
                 <div className="flex justify-between items-center">
                     <h1 className="text-xl font-bold">GraminLink</h1>
                     <div className="flex items-center gap-2">
+                        {!isOnline && (
+                            <div className="flex items-center gap-1 text-warning-orange text-xs px-2 py-1 rounded-lg bg-white/10">
+                                <WifiOff size={16} />
+                                <span>Offline</span>
+                            </div>
+                        )}
                         <button
                             onClick={() => setDarkMode(!darkMode)}
-                            className="p-2 hover:bg-white/20 rounded-lg"
+                            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                             title={darkMode ? 'Light Mode' : 'Dark Mode'}
                         >
                             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
                         </button>
                         <button
                             onClick={toggleLanguage}
-                            className="p-2 hover:bg-white/20 rounded-lg text-sm font-medium w-10"
+                            className="p-2 hover:bg-white/20 rounded-lg text-sm font-medium w-10 transition-colors"
                             title={t.toggleTitle}
                         >
                             {language.toUpperCase()}
                         </button>
                         <button
                             onClick={() => setShowMenu(!showMenu)}
-                            className="p-2 hover:bg-white/20 rounded-lg"
+                            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                         >
                             {showMenu ? <X size={24} /> : <Menu size={24} />}
                         </button>
@@ -51,7 +76,7 @@ export const MainLayout: React.FC = () => {
 
             {/* Mobile Menu */}
             {showMenu && (
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} border-b border-gray-200 max-h-96 overflow-y-auto z-30`}>
+                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border-b max-h-96 overflow-y-auto z-30`}>
                     <div className="p-4 space-y-2">
                         {navLinks.map((link) => {
                             const Icon = link.icon;
@@ -61,9 +86,12 @@ export const MainLayout: React.FC = () => {
                                     to={link.path}
                                     onClick={() => setShowMenu(false)}
                                     className={({ isActive }) =>
-                                        `flex items-center gap-3 p-3 rounded-lg transition-colors ${isActive
-                                            ? `${darkMode ? 'bg-primary-green' : 'bg-primary-green'} text-white`
-                                            : `${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
+                                        `flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                                            isActive
+                                                ? 'bg-primary-green text-white font-semibold'
+                                                : darkMode
+                                                ? 'text-gray-300 hover:bg-gray-700'
+                                                : 'text-gray-700 hover:bg-gray-100'
                                         }`
                                     }
                                 >
@@ -82,7 +110,7 @@ export const MainLayout: React.FC = () => {
             </main>
 
             {/* Bottom Navigation */}
-            <nav className={`fixed bottom-0 w-full ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t flex justify-around py-2 pb-4 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-20 overflow-x-auto`}>
+            <nav className={`fixed bottom-0 w-full ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t flex justify-around py-2 pb-4 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-20 overflow-x-auto`}>
                 {navLinks.slice(0, 4).map((link) => {
                     const Icon = link.icon;
                     return (
@@ -90,7 +118,13 @@ export const MainLayout: React.FC = () => {
                             key={link.path}
                             to={link.path}
                             className={({ isActive }) =>
-                                `flex flex-col items-center p-2 rounded-lg transition-colors whitespace-nowrap ${isActive ? 'text-primary-green' : darkMode ? 'text-gray-400' : 'text-gray-600'}`
+                                `flex flex-col items-center p-2 rounded-lg transition-colors whitespace-nowrap ${
+                                    isActive
+                                        ? 'text-primary-green'
+                                        : darkMode
+                                        ? 'text-gray-400 hover:text-gray-300'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`
                             }
                         >
                             <Icon size={28} />

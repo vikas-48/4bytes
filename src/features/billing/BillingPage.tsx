@@ -3,18 +3,27 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Customer } from '../../db/db';
 import { useCart } from '../../contexts/CartContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { IndianRupee, CheckCircle, User, X } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { IndianRupee, CheckCircle, User, X, Search, Mic, MicOff } from 'lucide-react';
 
 export const BillingPage: React.FC = () => {
     const products = useLiveQuery(() => db.products.toArray());
     const customers = useLiveQuery(() => db.customers.toArray());
-    const { cart, addToCart, clearCart, cartTotal } = useCart(); // Assuming removeFromCart exists or will add
+    const { cart, addToCart, clearCart, cartTotal } = useCart();
     const { t } = useLanguage();
+    const { addToast } = useToast();
+    const { isListening, transcript, isSupported, startListening, stopListening } = useSpeechRecognition({
+        onResult: (transcript) => {
+            setSearchTerm(transcript);
+        },
+    });
 
     const [showCheckout, setShowCheckout] = useState(false);
     const [checkoutStep, setCheckoutStep] = useState<'SUMMARY' | 'PAYMENT'>('SUMMARY');
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'KHATA' | null>(null);
     const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const handleTransaction = async () => {
         if (paymentMethod === 'KHATA' && !selectedCustomerId) return;
@@ -78,19 +87,56 @@ export const BillingPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col relative bg-gray-50 dark:bg-gray-900">
+            {/* Search Bar */}
+            <div className="sticky top-0 p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 space-y-3">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t.tapToAdd}</h2>
+                <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg p-2 pl-10 placeholder-gray-500 dark:placeholder-gray-400"
+                        />
+                    </div>
+                    {isSupported && (
+                        <button
+                            onClick={isListening ? stopListening : startListening}
+                            className={`px-3 py-2 rounded-lg transition-colors ${
+                                isListening
+                                    ? 'bg-danger-red text-white'
+                                    : 'bg-primary-green text-white'
+                            }`}
+                        >
+                            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                        </button>
+                    )}
+                </div>
+            </div>
+
             {/* Product Grid */}
             <div className="flex-1 overflow-y-auto p-4 content-start">
-                <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">{t.tapToAdd}</h2>
                 <div className="grid grid-cols-2 gap-3 pb-24">
-                    {products?.map(product => (
+                    {products?.filter(p =>
+                        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        p.category.toLowerCase().includes(searchTerm.toLowerCase())
+                    ).map(product => (
                         <button
                             key={product.id}
-                            onClick={() => addToCart(product)}
-                            className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center aspect-square active:scale-95 transition-transform"
+                            onClick={() => {
+                                addToCart(product);
+                                addToast(`${product.name} added to cart`, 'success');
+                            }}
+                            className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center aspect-square active:scale-95 transition-transform hover:shadow-md"
                         >
                             <div className="text-4xl mb-2">{product.icon || '📦'}</div>
                             <span className="font-bold text-gray-900 dark:text-gray-100 leading-tight block w-full text-center truncate">{product.name}</span>
                             <span className="text-primary-green font-bold text-sm mt-1">₹{product.price}</span>
+                            {product.stock <= product.minStock && (
+                                <span className="text-xs text-danger-red font-semibold mt-1">Low Stock</span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -101,7 +147,7 @@ export const BillingPage: React.FC = () => {
                 <div className="absolute bottom-4 left-4 right-4 z-20">
                     <button
                         onClick={() => setShowCheckout(true)}
-                        className="w-full bg-primary-green text-white p-4 rounded-2xl shadow-lg flex justify-between items-center animate-slide-up"
+                        className="w-full bg-primary-green text-white p-4 rounded-2xl shadow-lg flex justify-between items-center animate-slide-up hover:shadow-xl transition-shadow"
                     >
                         <div className="flex items-center gap-3">
                             <span className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">{cart.reduce((a, b) => a + b.quantity, 0)}</span>

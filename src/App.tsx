@@ -9,26 +9,29 @@ import { AnalyticsPage } from './features/analytics/AnalyticsPage';
 import { PaymentPage } from './features/payments/PaymentPage';
 import { CartProvider } from './contexts/CartContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { ToastProvider } from './contexts/ToastContext';
 
 function App() {
   return (
-    <CartProvider>
-      <LanguageProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<MainLayout />}>
-              <Route index element={<BillingPage />} />
-              <Route path="khata" element={<KhataPage />} />
-              <Route path="inventory" element={<InventoryPage />} />
-              <Route path="customers" element={<CustomerPage />} />
-              <Route path="products" element={<ProductPage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="payments" element={<PaymentPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </LanguageProvider>
-    </CartProvider>
+    <ToastProvider>
+      <CartProvider>
+        <LanguageProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<MainLayout />}>
+                <Route index element={<BillingPage />} />
+                <Route path="khata" element={<KhataPage />} />
+                <Route path="inventory" element={<InventoryPage />} />
+                <Route path="customers" element={<CustomerPage />} />
+                <Route path="products" element={<ProductPage />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="payments" element={<PaymentPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </LanguageProvider>
+      </CartProvider>
+    </ToastProvider>
   );
 }
 
