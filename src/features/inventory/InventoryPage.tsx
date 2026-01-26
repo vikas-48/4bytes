@@ -15,7 +15,10 @@ export const InventoryPage: React.FC = () => {
             price: parseFloat(newProduct.price),
             stock: parseInt(newProduct.stock) || 0,
             icon: 'default',
-            category: newProduct.category
+            category: newProduct.category,
+            minStock: 0,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
         });
         setIsAdding(false);
         setNewProduct({ name: '', price: '', stock: '', category: 'default' });

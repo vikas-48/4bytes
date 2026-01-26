@@ -1,24 +1,25 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun, Globe } from 'lucide-react';
+import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export const MainLayout: React.FC = () => {
     const [showMenu, setShowMenu] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
-    const [language, setLanguage] = useState<'en' | 'hi'>('en');
+    const { language, t, toggleLanguage } = useLanguage();
 
     const navLinks = [
-        { path: '/', label: darkMode ? 'बिलिंग' : 'Billing', icon: Store },
-        { path: '/customers', label: darkMode ? 'ग्राहक' : 'Customers', icon: Users },
-        { path: '/products', label: darkMode ? 'उत्पाद' : 'Products', icon: Package },
-        { path: '/khata', label: darkMode ? 'खाता' : 'Khata', icon: CreditCard },
-        { path: '/inventory', label: darkMode ? 'इन्वेंटरी' : 'Stock', icon: ShoppingCart },
-        { path: '/payments', label: darkMode ? 'भुगतान' : 'Payments', icon: CreditCard },
-        { path: '/analytics', label: darkMode ? 'विश्लेषण' : 'Analytics', icon: TrendingUp },
+        { path: '/', label: t.billing, icon: Store },
+        { path: '/customers', label: t.customers, icon: Users },
+        { path: '/products', label: t.products, icon: Package },
+        { path: '/khata', label: t.khata, icon: CreditCard },
+        { path: '/inventory', label: t.inventory, icon: ShoppingCart },
+        { path: '/payments', label: t.payments, icon: CreditCard },
+        { path: '/analytics', label: t.analytics, icon: TrendingUp },
     ];
 
     return (
-        <div className={`h-screen flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className={`h-screen flex flex-col ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
             {/* Header */}
             <header className={`${darkMode ? 'bg-gray-800' : 'bg-primary-green'} text-white p-4 shadow-md z-10 sticky top-0`}>
                 <div className="flex justify-between items-center">
@@ -32,11 +33,11 @@ export const MainLayout: React.FC = () => {
                             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
                         </button>
                         <button
-                            onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
-                            className="p-2 hover:bg-white/20 rounded-lg text-sm font-medium"
-                            title="Toggle Language"
+                            onClick={toggleLanguage}
+                            className="p-2 hover:bg-white/20 rounded-lg text-sm font-medium w-10"
+                            title={t.toggleTitle}
                         >
-                            {language === 'en' ? 'HI' : 'EN'}
+                            {language.toUpperCase()}
                         </button>
                         <button
                             onClick={() => setShowMenu(!showMenu)}
@@ -60,10 +61,9 @@ export const MainLayout: React.FC = () => {
                                     to={link.path}
                                     onClick={() => setShowMenu(false)}
                                     className={({ isActive }) =>
-                                        `flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                                            isActive
-                                                ? `${darkMode ? 'bg-primary-green' : 'bg-primary-green'} text-white`
-                                                : `${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
+                                        `flex items-center gap-3 p-3 rounded-lg transition-colors ${isActive
+                                            ? `${darkMode ? 'bg-primary-green' : 'bg-primary-green'} text-white`
+                                            : `${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
                                         }`
                                     }
                                 >
@@ -90,7 +90,7 @@ export const MainLayout: React.FC = () => {
                             key={link.path}
                             to={link.path}
                             className={({ isActive }) =>
-                                `flex flex-col items-center p-2 rounded-lg transition-colors whitespace-nowrap ${isActive ? 'text-primary-green' : darkMode ? 'text-gray-400' : 'text-gray-500'}`
+                                `flex flex-col items-center p-2 rounded-lg transition-colors whitespace-nowrap ${isActive ? 'text-primary-green' : darkMode ? 'text-gray-400' : 'text-gray-600'}`
                             }
                         >
                             <Icon size={28} />

@@ -15,7 +15,10 @@ export const KhataPage: React.FC = () => {
             phone: newCustomer.phone,
             khataBalance: 0,
             trustScore: 100, // Default high trust
-            visitValidation: 0
+            visitValidation: 0,
+            loyaltyPoints: 0,
+            totalPurchases: 0,
+            createdAt: Date.now(),
         });
         setIsAdding(false);
         setNewCustomer({ name: '', phone: '' });
