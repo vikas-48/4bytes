@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun, Wifi, WifiOff } from 'lucide-react';
+import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun, WifiOff, Gift } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 export const MainLayout: React.FC = () => {
@@ -29,6 +29,7 @@ export const MainLayout: React.FC = () => {
 
     const navLinks = [
         { path: '/', label: t.billing, icon: Store },
+        { path: '/deals', label: 'Group Buy 🔥', icon: Gift },
         { path: '/customers', label: t.customers, icon: Users },
         { path: '/products', label: t.products, icon: Package },
         { path: '/khata', label: t.khata, icon: CreditCard },
@@ -86,10 +87,9 @@ export const MainLayout: React.FC = () => {
                                     to={link.path}
                                     onClick={() => setShowMenu(false)}
                                     className={({ isActive }) =>
-                                        `flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                                            isActive
-                                                ? 'bg-primary-green text-white font-semibold'
-                                                : darkMode
+                                        `flex items-center gap-3 p-3 rounded-lg transition-colors ${isActive
+                                            ? 'bg-primary-green text-white font-semibold'
+                                            : darkMode
                                                 ? 'text-gray-300 hover:bg-gray-700'
                                                 : 'text-gray-700 hover:bg-gray-100'
                                         }`
@@ -118,10 +118,9 @@ export const MainLayout: React.FC = () => {
                             key={link.path}
                             to={link.path}
                             className={({ isActive }) =>
-                                `flex flex-col items-center p-2 rounded-lg transition-colors whitespace-nowrap ${
-                                    isActive
-                                        ? 'text-primary-green'
-                                        : darkMode
+                                `flex flex-col items-center p-2 rounded-lg transition-colors whitespace-nowrap ${isActive
+                                    ? 'text-primary-green'
+                                    : darkMode
                                         ? 'text-gray-400 hover:text-gray-300'
                                         : 'text-gray-500 hover:text-gray-700'
                                 }`

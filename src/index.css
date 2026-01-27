@@ -37,6 +37,12 @@
   .animate-slide-up {
     animation: slide-up 0.3s ease-out;
   }
+
+  .progress-bar-shimmer {
+    background: linear-gradient(90deg, #10B981 0%, #34D399 50%, #10B981 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+  }
 }
 
 :root {

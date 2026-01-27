@@ -11,8 +11,11 @@
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
+    "canvas-confetti": "^1.9.4",
     "dexie": "^4.2.1",
     "dexie-react-hooks": "^4.2.0",
+    "firebase": "^12.8.0",
+    "framer-motion": "^12.29.2",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -22,6 +25,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
