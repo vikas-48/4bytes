@@ -1,3 +1,12 @@
+
+// Extend Window interface for Web Speech API
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
+
 import { useState, useRef, useEffect } from 'react';
 
 interface UseSpeechRecognitionOptions {
@@ -13,11 +22,11 @@ export const useSpeechRecognition = (options: UseSpeechRecognitionOptions = {}) 
 
   useEffect(() => {
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    
+
     if (SpeechRecognition) {
       setIsSupported(true);
       recognitionRef.current = new SpeechRecognition();
-      
+
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
@@ -29,10 +38,10 @@ export const useSpeechRecognition = (options: UseSpeechRecognitionOptions = {}) 
 
       recognitionRef.current.onresult = (event: any) => {
         let interimTranscript = '';
-        
+
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
-          
+
           if (event.results[i].isFinal) {
             setTranscript(prev => prev + transcript);
             options.onResult?.(transcript);

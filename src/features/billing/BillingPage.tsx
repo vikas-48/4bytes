@@ -13,6 +13,7 @@ export const BillingPage: React.FC = () => {
     const { cart, addToCart, clearCart, cartTotal } = useCart();
     const { t } = useLanguage();
     const { addToast } = useToast();
+    // @ts-ignore
     const { isListening, transcript, isSupported, startListening, stopListening } = useSpeechRecognition({
         onResult: (transcript) => {
             setSearchTerm(transcript);
@@ -104,11 +105,10 @@ export const BillingPage: React.FC = () => {
                     {isSupported && (
                         <button
                             onClick={isListening ? stopListening : startListening}
-                            className={`px-3 py-2 rounded-lg transition-colors ${
-                                isListening
+                            className={`px-3 py-2 rounded-lg transition-colors ${isListening
                                     ? 'bg-danger-red text-white'
                                     : 'bg-primary-green text-white'
-                            }`}
+                                }`}
                         >
                             {isListening ? <MicOff size={20} /> : <Mic size={20} />}
                         </button>
