@@ -1,21 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Zap, CheckCircle, ChevronRight } from 'lucide-react';
+import { Clock, Zap, CheckCircle, ChevronRight, MapPin } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { dbRef, runTransaction, db } from '../lib/firebase';
 
 const GroupBuyCard = ({ deal, userId = 'shop_me' }: { deal: any, userId?: string }) => {
     const [pledge, setPledge] = useState(1);
     const [isJoined, setIsJoined] = useState(false);
+    const [liveUnits, setLiveUnits] = useState(deal.current_units);
 
-    // Calculate Progress
-    const percent = Math.min((deal.current_units / deal.target_units) * 100, 100);
+    // Calculate Progress (using live units for animation)
+    const percent = Math.min((liveUnits / deal.target_units) * 100, 100);
     const isUnlocked = percent >= 100;
 
     // Calculate Savings
     const marketTotal = deal.market_price * pledge;
     const dealTotal = deal.deal_price * pledge;
     const savings = marketTotal - dealTotal;
+
+    // Ghost Live Activity - Simulate real-time joins
+    useEffect(() => {
+        if (isUnlocked || liveUnits >= deal.target_units) return;
+
+        // Random interval between 8-15 seconds
+        const randomInterval = Math.floor(Math.random() * (15000 - 8000 + 1) + 8000);
+
+        const timer = setInterval(() => {
+            setLiveUnits((prev: number) => {
+                if (prev >= deal.target_units) return prev;
+                const newVal = prev + 1;
+                console.log(`🔥 Live Activity: Someone joined! (${newVal}/${deal.target_units})`);
+                return newVal;
+            });
+        }, randomInterval);
+
+        return () => clearInterval(timer);
+    }, [isUnlocked, deal.target_units, liveUnits]);
 
     const handleJoin = async () => {
         try {
@@ -113,9 +133,18 @@ const GroupBuyCard = ({ deal, userId = 'shop_me' }: { deal: any, userId?: string
                                 <Zap size={16} className="text-violet-600 dark:text-violet-300" />
                             </div>
                             <p className="text-xs text-violet-700 dark:text-violet-300 leading-relaxed">
-                                <span className="font-bold">AI Insight:</span> Based on your sales history, you will stock out in 4 days. This deal is optimal.
+                                <span className="font-bold">AI Insight:</span> {deal.aiInsight?.message || 'Based on your sales history, you will stock out in 4 days. This deal is optimal.'}
                             </p>
                         </div>
+
+                        {/* Drop Point Display */}
+                        {deal.anchorShop && (
+                            <div className="mt-3 flex items-center gap-2 text-xs bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg w-fit">
+                                <MapPin size={12} className="text-gray-500 dark:text-gray-400" />
+                                <span className="text-gray-500 dark:text-gray-400">Drop Point:</span>
+                                <span className="font-bold text-gray-700 dark:text-gray-300">{deal.anchorShop}</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* RIGHT: ACTION ZONE */}
@@ -151,7 +180,7 @@ const GroupBuyCard = ({ deal, userId = 'shop_me' }: { deal: any, userId?: string
                             {/* PROGRESS BAR (The "Liquid" Effect) */}
                             <div className="mb-8">
                                 <div className="flex justify-between text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">
-                                    <span>{deal.current_units} pledged</span>
+                                    <span>{liveUnits} pledged</span>
                                     <span>Goal: {deal.target_units}</span>
                                 </div>
                                 <div className="h-6 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner relative">
@@ -166,7 +195,7 @@ const GroupBuyCard = ({ deal, userId = 'shop_me' }: { deal: any, userId?: string
                                     </motion.div>
                                 </div>
                                 <p className={`text-right text-xs font-bold mt-1 ${isUnlocked ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                                    {isUnlocked ? '🚀 WHOLESALE PRICE UNLOCKED!' : `${deal.target_units - deal.current_units} more units needed`}
+                                    {isUnlocked ? '🚀 WHOLESALE PRICE UNLOCKED!' : `${Math.max(0, deal.target_units - liveUnits)} more units needed`}
                                 </p>
                             </div>
                         </div>
@@ -201,15 +230,15 @@ const GroupBuyCard = ({ deal, userId = 'shop_me' }: { deal: any, userId?: string
                                     You save <span className="text-green-600 dark:text-green-400 font-bold">₹{savings}</span> instantly
                                 </div>
 
-                                {/* WhatsApp Button */}
+                                {/* WhatsApp Viral Loop Button */}
                                 <a
-                                    href={`https://wa.me/?text=${encodeURIComponent(`🔥 Group Buy Alert: ${deal.product_name} is at ₹${deal.deal_price}! (Market: ₹${deal.market_price}). Join on PaySphere: https://gramin-link.app/deal/${deal.id}`)}`}
+                                    href={`https://wa.me/?text=${encodeURIComponent(`🔥 Hey! Join this ${deal.product_name} deal on GraminLink. We need ${Math.max(0, deal.target_units - liveUnits)} more units to unlock ₹${deal.deal_price} price! Market price: ₹${deal.market_price}. Join now: https://gramin-link.app/deal/${deal.id}`)}`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="w-full flex justify-center items-center gap-2 px-4 py-3 border-2 border-green-100 dark:border-green-900 rounded-xl text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 font-bold transition-colors mt-3"
+                                    className="w-full flex justify-center items-center gap-2 px-4 py-3 bg-[#25D366]/10 border-2 border-[#25D366]/30 rounded-xl text-[#25D366] hover:bg-[#25D366]/20 font-bold transition-colors mt-3"
                                 >
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" className="text-green-500"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.008-.57-.008-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
-                                    Invite on WhatsApp
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" className="text-[#25D366]"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.008-.57-.008-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                                    Invite Neighbors ({Math.max(0, deal.target_units - liveUnits)} needed)
                                 </a>
                             </div>
                         ) : (
