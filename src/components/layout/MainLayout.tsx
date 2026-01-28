@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun, WifiOff, Gift } from 'lucide-react';
+import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun, WifiOff, Gift, BookOpen } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 export const MainLayout: React.FC = () => {
@@ -35,6 +35,7 @@ export const MainLayout: React.FC = () => {
         { path: '/khata', label: t.khata, icon: CreditCard },
         { path: '/inventory', label: t.inventory, icon: ShoppingCart },
         { path: '/payments', label: t.payments, icon: CreditCard },
+        { path: '/ledger', label: 'Ledger', icon: BookOpen },
         { path: '/analytics', label: t.analytics, icon: TrendingUp },
     ];
 

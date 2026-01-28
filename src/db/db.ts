@@ -8,16 +8,18 @@ export interface Product {
   minStock: number; // Reorder point
   icon: string;
   category: string;
+  unit: string; // kg / g / litre / packet / piece
   createdAt: number;
   updatedAt: number;
 }
 
 export interface Customer {
   id?: number;
-  name: string;
+  name?: string;
   phone: string;
   photo?: string;
   khataBalance: number;
+  totalTransactions: number;
   trustScore: number;
   visitValidation: number;
   lastVisit?: number;
@@ -37,11 +39,12 @@ export interface TransactionItem {
 export interface Transaction {
   id?: number;
   timestamp: number;
-  type: 'SALE' | 'PAYMENT' | 'RETURN';
+  type: 'SALE' | 'PAYMENT' | 'RETURN' | 'LEDGE';
+  status: 'PAID' | 'LEDGE';
   amount: number;
   items: TransactionItem[];
   customerId?: number;
-  paymentMethod: 'CASH' | 'KHATA' | 'UPI' | 'CHECK';
+  paymentMethod: 'CASH' | 'UPI' | 'LEDGE';
   discountAmount?: number;
   invoiceNumber?: string;
 }
@@ -52,7 +55,7 @@ export interface Payment {
   amount: number;
   timestamp: number;
   type: 'PARTIAL' | 'FULL';
-  paymentMethod: 'CASH' | 'UPI' | 'CHECK' | 'BANK';
+  paymentMethod: 'CASH' | 'UPI' | 'BANK';
   notes?: string;
   referenceNumber?: string;
 }
@@ -90,6 +93,18 @@ export interface UserSettings {
   lastSyncTime: number;
 }
 
+export interface Ledger {
+  id?: number;
+  billTotal: number;
+  paymentMode: 'CASH' | 'UPI' | 'LEDGE';
+  status: 'PAID' | 'LEDGE';
+  timestamp: number;
+  items: TransactionItem[];
+  customerId?: number;
+  customerName?: string;
+  customerPhone?: string;
+}
+
 export class GraminDB extends Dexie {
   products!: Table<Product>;
   customers!: Table<Customer>;
@@ -98,17 +113,19 @@ export class GraminDB extends Dexie {
   discounts!: Table<Discount>;
   stockMovements!: Table<StockMovement>;
   userSettings!: Table<UserSettings>;
+  ledger!: Table<Ledger>;
 
   constructor() {
     super('GraminDB');
-    this.version(1).stores({
+    this.version(2).stores({
       products: '++id, name, category, minStock',
       customers: '++id, name, phone, khataBalance, createdAt',
       transactions: '++id, timestamp, type, customerId, paymentMethod',
       payments: '++id, customerId, timestamp',
       discounts: '++id, type, startDate, endDate, isActive',
       stockMovements: '++id, productId, timestamp',
-      userSettings: 'id'
+      userSettings: 'id',
+      ledger: '++id, timestamp, paymentMode'
     });
   }
 }

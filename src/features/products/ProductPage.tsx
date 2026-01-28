@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, AlertTriangle } from 'lucide-react';
 import { db } from '../../db/db';
 import type { Product } from '../../db/db';
+import { seedProducts } from '../../db/seedData';
 
 export const ProductPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ name: '', price: 0, stock: 0, minStock: 5, category: '', icon: '📦' });
+  const [formData, setFormData] = useState({ name: '', price: 0, stock: 0, minStock: 5, category: '', icon: '📦', unit: 'piece' });
 
   useEffect(() => {
+    seedProducts(); // Seed products on first load
     loadProducts();
   }, []);
 
@@ -38,7 +40,7 @@ export const ProductPage: React.FC = () => {
       });
     }
 
-    setFormData({ name: '', price: 0, stock: 0, minStock: 5, category: '', icon: '📦' });
+    setFormData({ name: '', price: 0, stock: 0, minStock: 5, category: '', icon: '📦', unit: 'piece' });
     setEditingId(null);
     setShowForm(false);
     loadProducts();
@@ -59,7 +61,7 @@ export const ProductPage: React.FC = () => {
           onClick={() => {
             setShowForm(!showForm);
             setEditingId(null);
-            setFormData({ name: '', price: 0, stock: 0, minStock: 5, category: '', icon: '📦' });
+            setFormData({ name: '', price: 0, stock: 0, minStock: 5, category: '', icon: '📦', unit: 'piece' });
           }}
           className="bg-primary-green text-white p-3 rounded-lg flex items-center gap-2"
         >
@@ -104,6 +106,18 @@ export const ProductPage: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
             className="w-full border border-gray-300 rounded-lg p-2"
           />
+          <select
+            value={formData.unit}
+            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            className="w-full border border-gray-300 rounded-lg p-2"
+          >
+            <option value="piece">Piece</option>
+            <option value="packet">Packet</option>
+            <option value="kg">Kg</option>
+            <option value="g">Gram</option>
+            <option value="100g">100g</option>
+            <option value="litre">Litre</option>
+          </select>
           <div className="flex gap-2">
             <button
               onClick={handleAddProduct}
@@ -115,7 +129,7 @@ export const ProductPage: React.FC = () => {
               onClick={() => {
                 setShowForm(false);
                 setEditingId(null);
-                setFormData({ name: '', price: 0, stock: 0, minStock: 5, category: '', icon: '📦' });
+                setFormData({ name: '', price: 0, stock: 0, minStock: 5, category: '', icon: '📦', unit: 'piece' });
               }}
               className="flex-1 bg-gray-300 text-gray-700 p-2 rounded-lg"
             >
@@ -156,7 +170,7 @@ export const ProductPage: React.FC = () => {
                 <div className="text-sm text-gray-500">{product.category}</div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-semibold text-primary-green">₹{product.price}</div>
+                <div className="text-lg font-semibold text-primary-green">₹{product.price}/{product.unit}</div>
                 <div className={`text-sm ${product.stock <= product.minStock ? 'text-danger-red font-semibold' : 'text-gray-600'}`}>
                   Stock: {product.stock}
                 </div>
