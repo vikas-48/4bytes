@@ -6,17 +6,43 @@ import { auth } from '../middleware/auth.js';
 const router = express.Router();
 
 // Get all customers for the current shop (with balances)
+// Get all customers for the current shop (with balances)
 router.get('/', auth, async (req, res) => {
     try {
-        const accounts = await CustomerAccount.find({ shopkeeperId: req.auth?.userId })
-            .populate('customerId');
+        const { search } = req.query;
+        let customers = [];
 
-        // Map to a friendlier format for the frontend
-        const customers = accounts.map((acc: any) => ({
-            ...(acc.customerId as any)._doc,
-            khataBalance: acc.balance,
-            accountId: acc._id
-        }));
+        // If searching, look Globally
+        if (search) {
+            const regex = new RegExp(String(search), 'i');
+            const globalCustomers = await Customer.find({
+                $or: [{ name: regex }, { phoneNumber: regex }]
+            }).limit(10);
+
+            // For each found customer, attach THIS shop's balance
+            customers = await Promise.all(globalCustomers.map(async (cust: any) => {
+                const account = await CustomerAccount.findOne({
+                    customerId: cust._id,
+                    shopkeeperId: req.auth?.userId
+                });
+                return {
+                    ...cust._doc,
+                    khataBalance: account ? account.balance : 0,
+                    accountId: account ? account._id : null,
+                    isGlobal: true // Flag to show "Global Match" in UI
+                };
+            }));
+        } else {
+            // Default: Show only MY customers
+            const accounts = await CustomerAccount.find({ shopkeeperId: req.auth?.userId })
+                .populate('customerId');
+
+            customers = accounts.map((acc: any) => ({
+                ...(acc.customerId as any)._doc,
+                khataBalance: acc.balance,
+                accountId: acc._id
+            }));
+        }
 
         res.json(customers);
     } catch (err: any) {

@@ -28,7 +28,7 @@ export const productApi = {
 };
 
 export const customerApi = {
-    getAll: () => api.get('/customers'),
+    getAll: (query = '') => api.get(`/customers${query ? `?search=${query}` : ''}`),
     getByPhone: (phone: string) => api.get(`/customers/${phone}`),
     create: (data: any) => api.post('/customers', data),
 };

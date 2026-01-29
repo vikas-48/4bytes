@@ -37,12 +37,25 @@ export const BillingPage: React.FC = () => {
 
     useEffect(() => {
         loadProducts();
+        // Initial load of MY customers
         loadCustomers();
     }, []);
 
-    const loadCustomers = async () => {
+    // Debounce search for global customers
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (customerInput.length > 2) {
+                loadCustomers(customerInput);
+            } else if (customerInput.length === 0) {
+                loadCustomers(); // Reset to local list
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [customerInput]);
+
+    const loadCustomers = async (query = '') => {
         try {
-            const response = await customerApi.getAll();
+            const response = await customerApi.getAll(query);
             setAllCustomers(response.data);
         } catch (err) {
             console.error('Failed to load customers', err);
@@ -85,10 +98,8 @@ export const BillingPage: React.FC = () => {
         }
     };
 
-    const filteredCustomers = allCustomers.filter(c =>
-        (c.name?.toLowerCase().includes(customerInput.toLowerCase()) ||
-            c.phoneNumber.includes(customerInput)) && customerInput.length > 0
-    );
+    // No client-side filtering needed anymore, referencing allCustomers directly
+    const filteredCustomers = allCustomers;
 
     const processTransaction = async (method: 'cash' | 'online' | 'ledger') => {
         if (!selectedCustomer) return false;
@@ -354,7 +365,9 @@ export const BillingPage: React.FC = () => {
                                                         {cust.name?.[0] || 'C'}
                                                     </div>
                                                     <div className="text-left">
-                                                        <div className="font-black text-gray-900 dark:text-white">{cust.name || 'Unnamed Customer'}</div>
+                                                        <div className="font-black text-gray-900 dark:text-white flex items-center gap-2">
+                                                            {cust.name || 'Unnamed Customer'}
+                                                        </div>
                                                         <div className="text-xs text-gray-500 dark:text-gray-400 font-bold">+91 {cust.phoneNumber}</div>
                                                     </div>
                                                 </div>
