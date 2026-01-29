@@ -41,7 +41,7 @@ function App() {
                   <Route path="products" element={<ProductPage />} />
                   <Route path="analytics" element={<AnalyticsPage />} />
                   <Route path="payments" element={<PaymentPage />} />
-                  <Route path="ledger" element={<LedgerPage />} />
+                  <Route path="records" element={<LedgerPage />} />
                 </Route>
               </Routes>
             </BrowserRouter>

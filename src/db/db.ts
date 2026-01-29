@@ -1,8 +1,8 @@
-// Product and Customer interfaces for the pos system.
+import Dexie, { type Table } from 'dexie';
 
 export interface Product {
+  id?: number;
   _id?: string;
-  id?: number; // legacy
   name: string;
   price: number;
   stock: number;
@@ -10,31 +10,52 @@ export interface Product {
   icon: string;
   category: string;
   unit: string;
-  createdAt?: string | number;
-  updatedAt?: string | number;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface Customer {
+  id?: number;
   _id?: string;
-  id?: number; // legacy
-  name?: string;
-  phoneNumber: string; // updated from phone
-  khataBalance: number;
-  totalTransactions?: number;
-  trustScore?: number;
-  visitValidation?: number;
-  lastVisit?: string | number;
-  loyaltyPoints?: number;
-  totalPurchases?: number;
-  createdAt?: string | number;
+  name: string;
+  phoneNumber: string;
+  khataScore: number;
+  khataLimit: number;
+  activeKhataAmount: number;
+  maxHistoricalKhataAmount: number;
+  lastScoreUpdate?: number;
+  totalTransactions: number;
+  khataTransactions: number;
+  latePayments: number;
+  lastPaymentDate?: number;
+  createdAt: number;
 }
 
-// Dummy db implementation to prevent crash on minor untouched files
-export const db: any = {
-  products: { toArray: async () => [], add: async () => { }, update: async () => { }, count: async () => 0 },
-  customers: { toArray: async () => [], add: async () => { }, update: async () => { }, where: () => ({ equals: () => ({ first: async () => null }) }) },
-  ledger: { toArray: async () => [], add: async () => { }, reverse: () => ({ toArray: async () => [] }), orderBy: () => ({ reverse: () => ({ toArray: async () => [] }) }) },
-  transactions: { toArray: async () => [], add: async () => { }, where: () => ({ above: () => ({ toArray: async () => [] }) }) },
-  payments: { toArray: async () => [], add: async () => { } },
-  transaction: async (_mode: string, _tables: string[], fn: Function) => await fn()
-};
+export interface LedgerEntry {
+  id?: number;
+  customerId: string; // Phone number or UUID
+  amount: number;
+  paymentMode: 'CASH' | 'UPI' | 'KHATA' | 'DEBIT' | 'CREDIT';
+  type: 'debit' | 'credit';
+  status: 'PENDING' | 'PAID' | 'CANCELLED';
+  createdAt: number;
+  paidAt?: number;
+  items?: any[];
+}
+
+export class GraminLinkDB extends Dexie {
+  products!: Table<Product>;
+  customers!: Table<Customer>;
+  ledger!: Table<LedgerEntry>;
+
+  constructor() {
+    super('GraminLinkDB');
+    this.version(3).stores({
+      products: '++id, _id, name, category',
+      customers: '++id, _id, phoneNumber, khataScore',
+      ledger: '++id, customerId, paymentMode, status, createdAt'
+    });
+  }
+}
+
+export const db = new GraminLinkDB();

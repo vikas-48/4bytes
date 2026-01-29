@@ -44,7 +44,7 @@ export const MainLayout: React.FC = () => {
         { path: '/khata', label: t.khata, icon: CreditCard },
         { path: '/inventory', label: t.inventory, icon: ShoppingCart },
         { path: '/payments', label: t.payments, icon: CreditCard },
-        { path: '/ledger', label: 'Ledger', icon: BookOpen },
+        { path: '/records', label: 'Records', icon: BookOpen },
         { path: '/analytics', label: t.analytics, icon: TrendingUp },
     ];
 

@@ -17,31 +17,27 @@ router.get('/customer/:customerId', async (req, res) => {
 
 // Post a credit entry (customer pays back)
 router.post('/payment', async (req, res) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
     try {
-        const { customerId, amount } = req.body;
+        const { customerId, amount, paymentMode } = req.body;
 
         const entry = new LedgerEntry({
             customerId,
             amount,
             type: 'credit',
+            paymentMode: paymentMode || 'cash',
             status: 'settled'
         });
-        await entry.save({ session });
+        await entry.save();
 
-        const customer = await Customer.findById(customerId).session(session);
+        const customer = await Customer.findById(customerId);
         if (!customer) throw new Error('Customer not found');
 
         customer.khataBalance -= amount;
-        await customer.save({ session });
+        await customer.save();
 
-        await session.commitTransaction();
-        session.endSession();
         res.status(201).json(entry);
     } catch (err: any) {
-        await session.abortTransaction();
-        session.endSession();
+        console.error('Ledger Payment Error:', err.message);
         res.status(400).json({ message: err.message });
     }
 });
