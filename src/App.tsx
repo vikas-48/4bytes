@@ -8,6 +8,7 @@ import { CustomerPage } from './features/customers/CustomerPage';
 import { ProductPage } from './features/products/ProductPage';
 import { AnalyticsPage } from './features/analytics/AnalyticsPage';
 import { PaymentPage } from './features/payments/PaymentPage';
+import RecoveryPage from './features/recovery/RecoveryPage';
 import { CartProvider } from './contexts/CartContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -28,6 +29,7 @@ function App() {
                 <Route path="products" element={<ProductPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
                 <Route path="payments" element={<PaymentPage />} />
+                <Route path="recovery" element={<RecoveryPage />} />
               </Route>
             </Routes>
           </BrowserRouter>

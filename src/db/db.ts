@@ -24,6 +24,9 @@ export interface Customer {
   loyaltyPoints: number;
   totalPurchases: number;
   createdAt: number;
+  nextCallDate?: number; // Timestamp for the next scheduled call
+  recoveryStatus?: string; // e.g., 'Promised', 'Declined', 'Call Again'
+  recoveryNotes?: string;
 }
 
 export interface TransactionItem {
