@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
 import { User } from '../models/User.js';
+import { Product } from '../models/Product.js';
+import { starterProducts } from '../utils/starterProducts.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'hackathon_secret_123';
@@ -28,6 +30,14 @@ router.post('/register', async (req, res) => {
         });
 
         const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
+
+        // Seed initial products for the new shopkeeper
+        const initialProducts = starterProducts.map(p => ({
+            ...p,
+            shopkeeperId: user._id
+        }));
+        await Product.insertMany(initialProducts);
+
         res.status(201).json({ token, user: { id: user._id, name: user.name, username: user.username, email: user.email } });
     } catch (err) {
         res.status(500).json({ message: 'Server error' });

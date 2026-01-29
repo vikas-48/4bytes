@@ -1,12 +1,13 @@
 import express from 'express';
 import { Product } from '../models/Product.js';
+import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Get all products
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
     try {
-        const products = await Product.find();
+        const products = await Product.find({ shopkeeperId: req.auth?.userId });
         res.json(products);
     } catch (err: any) {
         res.status(500).json({ message: err.message });
@@ -14,8 +15,8 @@ router.get('/', async (req, res) => {
 });
 
 // Create product
-router.post('/', async (req, res) => {
-    const product = new Product(req.body);
+router.post('/', auth, async (req, res) => {
+    const product = new Product({ ...req.body, shopkeeperId: req.auth?.userId });
     try {
         const newProduct = await product.save();
         res.status(201).json(newProduct);
@@ -25,9 +26,13 @@ router.post('/', async (req, res) => {
 });
 
 // Update product (e.g., manual stock adjustment)
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', auth, async (req, res) => {
     try {
-        const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updatedProduct = await Product.findOneAndUpdate(
+            { _id: req.params.id, shopkeeperId: req.auth?.userId },
+            req.body,
+            { new: true }
+        );
         res.json(updatedProduct);
     } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -35,7 +40,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // Seed products
-router.post('/seed', async (req, res) => {
+router.post('/seed', auth, async (req, res) => {
     const products = [
         // Grains & Flours
         { name: 'Basmati Rice', price: 90, stock: 100, category: 'Grain', unit: 'kg', icon: '🌾' },
@@ -99,10 +104,10 @@ router.post('/seed', async (req, res) => {
         { name: 'Raisins', price: 400, stock: 40, category: 'Dry Fruits', unit: 'kg', icon: '🍇' },
         { name: 'Dates', price: 350, stock: 50, category: 'Dry Fruits', unit: 'kg', icon: '🌴' },
         { name: 'Honey', price: 450, stock: 30, category: 'Grocery', unit: 'kg', icon: '🍯' },
-    ];
+    ].map(p => ({ ...p, shopkeeperId: req.auth?.userId }));
 
     try {
-        await Product.deleteMany({});
+        await Product.deleteMany({ shopkeeperId: req.auth?.userId });
         const seededProducts = await Product.insertMany(products);
         res.status(201).json(seededProducts);
     } catch (err: any) {
