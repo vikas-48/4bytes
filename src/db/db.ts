@@ -1,5 +1,4 @@
-// DEPRECATED: GraminDB (Dexie.js) is replaced by MongoDB Atlas.
-// This file now only provides common interfaces.
+// Product and Customer interfaces for the pos system.
 
 export interface Product {
   _id?: string;
@@ -37,5 +36,5 @@ export const db: any = {
   ledger: { toArray: async () => [], add: async () => { }, reverse: () => ({ toArray: async () => [] }), orderBy: () => ({ reverse: () => ({ toArray: async () => [] }) }) },
   transactions: { toArray: async () => [], add: async () => { }, where: () => ({ above: () => ({ toArray: async () => [] }) }) },
   payments: { toArray: async () => [], add: async () => { } },
-  transaction: async (mode: string, tables: string[], fn: Function) => await fn()
+  transaction: async (_mode: string, _tables: string[], fn: Function) => await fn()
 };
