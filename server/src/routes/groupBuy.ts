@@ -1,19 +1,20 @@
 import express from 'express';
 import { GroupBuy } from '../models/GroupBuy.js';
+import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
     try {
-        const deals = await GroupBuy.find().populate('members').populate('products.productId');
+        const deals = await GroupBuy.find({ shopkeeperId: req.auth?.userId }).populate('members').populate('products.productId');
         res.json(deals);
     } catch (err: any) {
         res.status(500).json({ message: err.message });
     }
 });
 
-router.post('/', async (req, res) => {
-    const deal = new GroupBuy(req.body);
+router.post('/', auth, async (req, res) => {
+    const deal = new GroupBuy({ ...req.body, shopkeeperId: req.auth?.userId });
     try {
         const newDeal = await deal.save();
         res.status(201).json(newDeal);
@@ -28,7 +29,9 @@ router.patch('/:id/join', async (req, res) => {
         if (!deal) return res.status(404).json({ message: 'Deal not found' });
 
         const { customerId } = req.body;
+        // @ts-ignore
         if (!deal.members.includes(customerId)) {
+            // @ts-ignore
             deal.members.push(customerId);
             await deal.save();
         }
