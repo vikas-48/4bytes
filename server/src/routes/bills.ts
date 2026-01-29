@@ -1,4 +1,6 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 import mongoose from 'mongoose';
 import { Bill } from '../models/Bill.js';
 import { Product } from '../models/Product.js';
@@ -104,3 +106,31 @@ router.get('/', auth, async (req, res) => {
 });
 
 export { router as billRouter };
+
+// Endpoint to accept a PDF (base64) and simulate sending to customer
+router.post('/send', auth, async (req, res) => {
+    try {
+        const { customerPhoneNumber, pdfBase64, fileName } = req.body;
+        if (!pdfBase64 || !customerPhoneNumber) return res.status(400).json({ message: 'Missing data' });
+
+        const uploadsDir = path.resolve(process.cwd(), 'uploads');
+        if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+
+        const buffer = Buffer.from(pdfBase64, 'base64');
+        const safeName = fileName || `bill_${customerPhoneNumber}_${Date.now()}.pdf`;
+        const outPath = path.join(uploadsDir, safeName);
+        fs.writeFileSync(outPath, buffer);
+
+        // TODO: integrate with SMS/email/WhatsApp provider to send the PDF to customer
+        console.log(`Saved PDF for ${customerPhoneNumber} -> ${outPath}`);
+
+        // Build public URL for client to use in share links
+        const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+        const publicUrl = `${baseUrl.replace(/\/$/, '')}/uploads/${encodeURIComponent(safeName)}`;
+
+        return res.json({ message: 'PDF received and saved', url: publicUrl });
+    } catch (e: any) {
+        console.error('Error in /bills/send', e);
+        return res.status(500).json({ message: 'Failed to process PDF' });
+    }
+});

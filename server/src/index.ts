@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import passport from 'passport';
+import path from 'path';
 import './config/passport.js';
 import { authRouter } from './routes/auth.js';
 import { productRouter } from './routes/products.js';
@@ -19,8 +20,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(passport.initialize());
+
+// Serve uploads (public PDFs)
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Routes
 app.use('/api/auth', authRouter);
