@@ -11,7 +11,7 @@ export const MainLayout: React.FC = () => {
     const [showMenu, setShowMenu] = useState(false);
     const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
     const [isOnline, setIsOnline] = useState(navigator.onLine);
-    const { language, t, toggleLanguage } = useLanguage();
+    const { t } = useLanguage();
 
     const handleLogout = () => {
         logout();
@@ -38,7 +38,7 @@ export const MainLayout: React.FC = () => {
 
     const navLinks = [
         { path: '/', label: t.billing, icon: Store },
-        { path: '/deals', label: 'Group Buy 🔥', icon: Gift },
+        { path: '/deals', label: 'Group Buy', icon: Gift },
         { path: '/customers', label: t.customers, icon: Users },
         { path: '/recovery', label: 'AI Agent 🤖', icon: Phone },
         { path: '/products', label: t.products, icon: Package },

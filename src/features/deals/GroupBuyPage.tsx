@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ShoppingBag, Sparkles, Truck } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 import GroupBuyCard from '../../components/GroupBuyCard';
 import HostDealModal from '../../components/HostDealModal';
 import DigitalPassModal from '../../components/DigitalPassModal';
 import { groupBuyApi } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
-import { MY_ORDERS } from '../../data/orderHistory';
 
 export default function GroupBuyPage() {
     const [activeDeals, setActiveDeals] = useState<any[]>([]);
@@ -36,7 +34,7 @@ export default function GroupBuyPage() {
                 totalAmount: newDeal.deal_price * newDeal.target_units,
                 status: 'active'
             });
-            addToast("🎉 Deal Launched on MongoDB Atlas!", "success");
+            addToast("🎉 Deal Launched Successfully!", "success");
             loadDeals();
             setIsHostModalOpen(false);
         } catch (e) {
@@ -62,8 +60,8 @@ export default function GroupBuyPage() {
                             <ShoppingBag size={20} />
                         </div>
                         <div>
-                            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Cloud GroupBuy</h1>
-                            <p className="text-xs text-gray-500 font-medium">Aggregated Orders</p>
+                            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Live GroupBuy</h1>
+                            <p className="text-xs text-gray-500 font-medium">Bulk Shop Orders</p>
                         </div>
                     </div>
                     <button onClick={() => setIsHostModalOpen(true)} className="bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-lg text-xs font-bold shadow-lg">
@@ -76,7 +74,7 @@ export default function GroupBuyPage() {
             <main className="max-w-4xl mx-auto">
                 <div className="mb-6 flex gap-4 border-b">
                     <button onClick={() => setView('active')} className={`pb-3 px-2 text-sm font-bold ${view === 'active' ? 'text-black border-b-2 border-black' : 'text-gray-400'}`}>Live Deals</button>
-                    <button onClick={() => setView('history')} className={`pb-3 px-2 text-sm font-bold ${view === 'history' ? 'text-black border-b-2 border-black' : 'text-gray-400'}`}>Cloud Orders</button>
+                    <button onClick={() => setView('history')} className={`pb-3 px-2 text-sm font-bold ${view === 'history' ? 'text-black border-b-2 border-black' : 'text-gray-400'}`}>My Group Orders</button>
                 </div>
 
                 {view === 'active' ? (
@@ -87,7 +85,7 @@ export default function GroupBuyPage() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        <p className="text-center text-gray-500 py-10">Historical orders fetched from MongoDB</p>
+                        <p className="text-center text-gray-500 py-10">Historical orders from your shop network</p>
                     </div>
                 )}
 

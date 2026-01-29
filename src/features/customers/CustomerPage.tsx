@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Phone, User, Calendar, History, AlertCircle, ChevronRight } from 'lucide-react';
+import { Plus, Search, Phone, User, Calendar, History, AlertCircle } from 'lucide-react';
 import { customerApi } from '../../services/api';
 
 export const CustomerPage: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', phoneNumber: '' });
 
   useEffect(() => {
@@ -55,7 +54,6 @@ export const CustomerPage: React.FC = () => {
     try {
       await customerApi.create(formData);
       setFormData({ name: '', phoneNumber: '' });
-      setEditingId(null);
       setShowForm(false);
       loadCustomers();
     } catch (err) {
@@ -81,13 +79,12 @@ export const CustomerPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-black text-gray-900 dark:text-white">Customers (MongoDB)</h2>
-          <p className="text-gray-500 text-sm">Centralized cloud ledger</p>
+          <h2 className="text-3xl font-black text-gray-900 dark:text-white">Customer Network</h2>
+          <p className="text-gray-500 text-sm font-medium">Smart centralized ledger</p>
         </div>
         <button
           onClick={() => {
             setShowForm(!showForm);
-            setEditingId(null);
             setFormData({ name: '', phoneNumber: '' });
           }}
           className="bg-primary-green text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-primary-green/20 font-bold active:scale-95 transition-transform"
