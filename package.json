@@ -12,6 +12,7 @@
   "dependencies": {
     "@types/uuid": "^10.0.0",
     "@vapi-ai/web": "^2.5.2",
+    "axios": "^1.13.4",
     "canvas-confetti": "^1.9.4",
     "dexie": "^4.2.1",
     "dexie-react-hooks": "^4.2.0",
