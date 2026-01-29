@@ -1,73 +1,67 @@
-# React + TypeScript + Vite
+# KiranaLink MVP 🚀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern Billing and Management system for Kirana/MSME shops. Features include high-speed billing, digital khata, product management, and Google Authentication.
 
-Currently, two official plugins are available:
+## 🛠️ Features
+- **Dynamic Billing**: Quick search and add products to cart.
+- **Authentication**: Manual and Google OAuth 2.0 (Strict selection).
+- **Inventory Management**: Track and update stock levels.
+- **Digital Khata**: Manage customer credits and payments.
+- **Ledger**: Holistic view of shop transactions.
+- **Analytics**: Visualize sales performance.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Getting Started
 
-## React Compiler
+### 1. Prerequisites
+- Node.js (v18+)
+- MongoDB Atlas account
+- Google Cloud Console project (for OAuth)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. Installation
+Clone the repository and install dependencies for both frontend and backend:
 
-## Expanding the ESLint configuration
+```bash
+# Frontend
+npm install
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Backend
+cd server
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 3. Environment Setup
+Create a `.env` file in the `server` directory and add the following (see `.env.example`):
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+PORT=5000
+MONGODB_URI=your_mongodb_atlas_uri
+JWT_SECRET=your_jwt_secret
+FRONTEND_URL=http://localhost:5174
+GOOGLE_CLIENT_ID=your_google_id
+GOOGLE_CLIENT_SECRET=your_google_secret
 ```
+
+### 4. Running the App
+Start the backend first, then the frontend.
+
+**Backend:**
+```bash
+cd server
+npm run dev
+```
+
+**Frontend:**
+```bash
+# In the root directory
+npm run dev
+```
+
+The app will be available at `http://localhost:5174`.
+
+## 🛡️ Authentication Note
+For Google OAuth to work locally, ensure your Google Cloud Console has the following:
+- **Authorized Javascript Origins**: `http://localhost:5174`
+- **Authorized Redirect URIs**: `http://localhost:5000/api/auth/google/callback`
+
+## 🤝 Contribution
+When pushing changes, please ensure you do not push your `.env` file. A `.gitignore` has been pre-configured to avoid this.
