@@ -41,7 +41,7 @@ export const billApi = {
 
 export const ledgerApi = {
     getCustomerLedger: (customerId: string) => api.get(`/ledger/customer/${customerId}`),
-    recordPayment: (data: { customerId: string; amount: number }) =>
+    recordPayment: (data: { customerId: string; amount: number; paymentMode: string }) =>
         api.post('/ledger/payment', data),
 };
 
