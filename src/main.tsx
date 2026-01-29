@@ -4,6 +4,7 @@ import './index.css'
 import App from './App'
 
 // Register service worker for offline functionality
+/*
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js').then(
@@ -16,6 +17,7 @@ if ('serviceWorker' in navigator) {
     );
   });
 }
+*/
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

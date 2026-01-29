@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun, WifiOff, Gift, BookOpen } from 'lucide-react';
+import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun, WifiOff, Gift, BookOpen, LogOut } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export const MainLayout: React.FC = () => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const [showMenu, setShowMenu] = useState(false);
     const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const { language, t, toggleLanguage } = useLanguage();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
 
     useEffect(() => {
         localStorage.setItem('darkMode', darkMode.toString());
@@ -44,7 +53,20 @@ export const MainLayout: React.FC = () => {
             {/* Header */}
             <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-primary-green'} text-white p-4 shadow-md z-10 sticky top-0 border-b`}>
                 <div className="flex justify-between items-center">
-                    <h1 className="text-xl font-bold">GraminLink</h1>
+                    <div className="flex items-center gap-3">
+                        {user?.avatar ? (
+                            <img src={user.avatar} className="w-8 h-8 rounded-full border border-white/20" alt="Avatar" />
+                        ) : (
+                            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                                {user?.name?.[0] || 'S'}
+                            </div>
+                        )}
+                        <div>
+                            <h1 className="text-sm font-bold leading-none">KiranaLink</h1>
+                            <p className="text-[10px] opacity-70 font-medium">{user?.name}</p>
+                        </div>
+                    </div>
+
                     <div className="flex items-center gap-2">
                         {!isOnline && (
                             <div className="flex items-center gap-1 text-warning-orange text-xs px-2 py-1 rounded-lg bg-white/10">
@@ -60,11 +82,11 @@ export const MainLayout: React.FC = () => {
                             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
                         </button>
                         <button
-                            onClick={toggleLanguage}
-                            className="p-2 hover:bg-white/20 rounded-lg text-sm font-medium w-10 transition-colors"
-                            title={t.toggleTitle}
+                            onClick={handleLogout}
+                            className="p-2 hover:bg-white/20 rounded-lg transition-colors text-white/80 hover:text-white"
+                            title="Logout"
                         >
-                            {language.toUpperCase()}
+                            <LogOut size={20} />
                         </button>
                         <button
                             onClick={() => setShowMenu(!showMenu)}
