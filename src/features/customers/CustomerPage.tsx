@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Phone, User, Calendar, History, AlertCircle } from 'lucide-react';
+import { Plus, Search, Phone, User, History, AlertCircle } from 'lucide-react';
 import { customerApi, ledgerApi } from '../../services/api';
 import { db } from '../../db/db';
 import { getKhataStatus, recalculateKhataScore } from '../../lib/khataLogic';
@@ -160,15 +161,6 @@ export const CustomerPage: React.FC = () => {
       .where('customerId').equals(customer.phoneNumber)
       .toArray();
     setCustomerTransactions(transactions.sort((a, b) => b.createdAt - a.createdAt));
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'No visits yet';
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
   };
 
   const filteredCustomers = customers.filter(

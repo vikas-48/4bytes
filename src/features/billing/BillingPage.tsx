@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCart } from '../../contexts/CartContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -7,6 +7,8 @@ import { productApi, customerApi, billApi } from '../../services/api';
 import { db } from '../../db/db';
 import { recalculateKhataScore, SCORE_DEFAULT, calculateKhataLimit, getKhataStatus } from '../../lib/khataLogic';
 import { X, Search, Plus, Minus, Trash2, User, ChevronRight, ShieldAlert, Award } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 export const BillingPage: React.FC = () => {
     const [products, setProducts] = useState<any[]>([]);
@@ -193,7 +195,8 @@ export const BillingPage: React.FC = () => {
 
         const success = await processTransaction('cash');
         if (success) {
-            setIsProcessing(false);
+            // Add a small delay before showing success state
+            setTimeout(() => setIsProcessing(false), 800);
         } else {
             setShowStatusModal(false);
         }
@@ -206,7 +209,8 @@ export const BillingPage: React.FC = () => {
 
         const success = await processTransaction('online');
         if (success) {
-            setIsProcessing(false);
+            // Add a small delay before showing success state
+            setTimeout(() => setIsProcessing(false), 800);
         } else {
             setShowStatusModal(false);
         }
@@ -225,8 +229,8 @@ export const BillingPage: React.FC = () => {
 
         const success = await processTransaction('ledger');
         if (success) {
-            setIsProcessing(false);
-            // No auto-close, wait for user to click OK
+            // Add a small delay before showing success state
+            setTimeout(() => setIsProcessing(false), 800);
         } else {
             setShowStatusModal(false);
         }
@@ -235,6 +239,73 @@ export const BillingPage: React.FC = () => {
     const handleTransactionComplete = () => {
         clearCart();
         closeCheckout();
+    };
+
+    const invoiceRef = useRef<HTMLDivElement | null>(null);
+
+    const generatePdfBase64 = async () => {
+        if (!invoiceRef.current) throw new Error('Invoice not ready');
+        const canvas = await html2canvas(invoiceRef.current, { scale: 1.5 });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        const base64 = pdf.output('datauristring');
+        return base64;
+    };
+
+    const downloadBillPdf = async () => {
+        try {
+            if (!invoiceRef.current) return;
+            const canvas = await html2canvas(invoiceRef.current, { scale: 1.5 });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'pt', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`bill_${selectedCustomer?.phoneNumber || 'guest'}_${Date.now()}.pdf`);
+            addToast('PDF downloaded', 'success');
+        } catch (e) {
+            console.error(e);
+            addToast('Failed to generate PDF', 'error');
+        }
+    };
+
+    const sendPdfToCustomer = async () => {
+        try {
+            if (!selectedCustomer?.phoneNumber) {
+                addToast('Customer phone not available', 'error');
+                return;
+            }
+
+            addToast('Preparing PDF and upload...', 'info');
+            const base64 = await generatePdfBase64();
+            // strip data: prefix
+            const cleaned = base64.split(',')[1];
+            const res = await billApi.sendPdf({ customerPhoneNumber: selectedCustomer?.phoneNumber || '', pdfBase64: cleaned, fileName: `bill_${Date.now()}.pdf` });
+            const publicUrl = res.data?.url || res.data?.path;
+            if (!publicUrl) {
+                addToast('Upload succeeded but no public URL returned', 'error');
+                return;
+            }
+
+            // Normalize phone to E.164 without plus for wa.me
+            const raw = selectedCustomer.phoneNumber || '';
+            const digits = raw.replace(/\D/g, '');
+            let waNumber = digits;
+            if (digits.length === 10) waNumber = '91' + digits; // assume India if 10 digits
+
+            const message = `Here is your bill for ₹${cartTotal}. Download: ${publicUrl}`;
+            const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+
+            // Open WhatsApp link (user will need to confirm/send)
+            window.open(waLink, '_blank');
+            addToast('Opening WhatsApp to share the bill', 'success');
+        } catch (e) {
+            console.error(e);
+            addToast('Failed to prepare WhatsApp link', 'error');
+        }
     };
 
     const closeCheckout = () => {
@@ -649,17 +720,53 @@ export const BillingPage: React.FC = () => {
                                     <div className="text-[10px] text-gray-400 font-bold mt-1 uppercase">Total Amount Paid</div>
                                 </div>
 
-                                <button
-                                    onClick={handleTransactionComplete}
-                                    className="mt-8 w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-transform"
-                                >
-                                    OK, NEXT BILL
-                                </button>
+                                <div className="mt-6 space-y-3">
+                                    <div className="flex gap-3">
+                                        <button onClick={downloadBillPdf} className="flex-1 py-3 rounded-2xl font-black bg-white border border-gray-200">Download Bill (PDF)</button>
+                                        <button onClick={sendPdfToCustomer} className="flex-1 py-3 rounded-2xl font-black bg-primary-green text-white">Send PDF to Customer</button>
+                                    </div>
+                                    <button
+                                        onClick={handleTransactionComplete}
+                                        className="mt-2 w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-transform"
+                                    >
+                                        OK, NEXT BILL
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
                 </div>
             )}
+
+            {/* Hidden invoice used to generate PDF */}
+            <div ref={invoiceRef} style={{ position: 'absolute', left: -9999, top: -9999, width: 600, background: '#fff', color: '#000', padding: 20 }}>
+                <div style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                    <h2 style={{ fontSize: 20, marginBottom: 8 }}>Bill / Invoice</h2>
+                    <div style={{ fontSize: 12, marginBottom: 6 }}>Date: {new Date().toLocaleString()}</div>
+                    <div style={{ fontSize: 12, marginBottom: 6 }}>Customer: {selectedCustomer?.name || 'Guest'} - +91 {selectedCustomer?.phoneNumber}</div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
+                        <thead>
+                            <tr>
+                                <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: '6px 0' }}>Item</th>
+                                <th style={{ textAlign: 'right', borderBottom: '1px solid #ddd', padding: '6px 0' }}>Qty</th>
+                                <th style={{ textAlign: 'right', borderBottom: '1px solid #ddd', padding: '6px 0' }}>Price</th>
+                                <th style={{ textAlign: 'right', borderBottom: '1px solid #ddd', padding: '6px 0' }}>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {cart.map(i => (
+                                <tr key={i._id}>
+                                    <td style={{ padding: '6px 0' }}>{i.name}</td>
+                                    <td style={{ padding: '6px 0', textAlign: 'right' }}>{i.quantity} {i.unit}</td>
+                                    <td style={{ padding: '6px 0', textAlign: 'right' }}>₹{i.price}</td>
+                                    <td style={{ padding: '6px 0', textAlign: 'right' }}>₹{i.price * i.quantity}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    <div style={{ marginTop: 12, textAlign: 'right', fontSize: 16, fontWeight: 800 }}>Grand Total: ₹{cartTotal}</div>
+                </div>
+            </div>
         </div>
     );
 };

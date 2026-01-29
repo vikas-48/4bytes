@@ -37,6 +37,8 @@ export const billApi = {
     getAll: () => api.get('/bills'),
     create: (data: { customerPhoneNumber: string; items: any[]; paymentType: string }) =>
         api.post('/bills', data),
+    sendPdf: (data: { customerPhoneNumber: string; pdfBase64: string; fileName?: string }) =>
+        api.post('/bills/send', data),
 };
 
 export const ledgerApi = {
