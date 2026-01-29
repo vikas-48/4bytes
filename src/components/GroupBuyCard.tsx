@@ -1,14 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Zap, CheckCircle, ChevronRight, MapPin } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { groupBuyApi } from '../services/api';
 
 const GroupBuyCard = ({ deal, customerId = 'shop_me' }: { deal: any, customerId?: string }) => {
-    const [pledge, setPledge] = useState(1);
     const [isJoined, setIsJoined] = useState(false);
 
-    // Mapped units from MongoDB
+    // Mapped units from network
     const currentUnits = deal.participants?.length || 0;
     const targetUnits = deal.products?.[0]?.quantity || 10;
     const productName = deal.groupName || 'Bulk Pack';
@@ -17,10 +15,6 @@ const GroupBuyCard = ({ deal, customerId = 'shop_me' }: { deal: any, customerId?
 
     const percent = Math.min((currentUnits / targetUnits) * 100, 100);
     const isUnlocked = percent >= 100;
-
-    const marketTotal = marketPrice * pledge;
-    const dealTotal = dealPrice * pledge;
-    const savings = marketTotal - dealTotal;
 
     const handleJoin = async () => {
         try {
@@ -81,7 +75,7 @@ const GroupBuyCard = ({ deal, customerId = 'shop_me' }: { deal: any, customerId?
                                 onClick={handleJoin}
                                 className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-xl font-bold text-lg shadow-xl"
                             >
-                                Join Deal via Cloud
+                                Join Deal
                             </button>
                         ) : (
                             <div className="bg-green-50 text-green-700 p-4 rounded-xl text-center font-bold">🎉 Pledged Successfully!</div>
@@ -91,7 +85,7 @@ const GroupBuyCard = ({ deal, customerId = 'shop_me' }: { deal: any, customerId?
 
                 {/* Footer Link to Cloud */}
                 <div className="bg-gray-50 dark:bg-gray-900 p-3 text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest border-t border-gray-100">
-                    Verified Sync: MongoDB Atlas Global Cluster
+                    Verified Digital Receipt
                 </div>
             </div>
         </motion.div>

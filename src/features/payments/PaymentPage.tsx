@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, AlertCircle } from 'lucide-react';
 import { ledgerApi, customerApi } from '../../services/api';
 
 export const PaymentPage: React.FC = () => {
@@ -47,7 +47,7 @@ export const PaymentPage: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Cloud Payments</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Payments</h2>
         <button onClick={() => setShowForm(!showForm)} className="bg-primary-green text-white p-3 rounded-lg flex items-center gap-2">
           <Plus size={20} /> Add Payment
         </button>
@@ -72,13 +72,13 @@ export const PaymentPage: React.FC = () => {
             ))}
           </select>
           <input type="number" placeholder="Payment amount" value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} className="w-full border-2 border-gray-100 rounded-xl p-3 text-2xl font-black" />
-          <button onClick={handleAddPayment} className="w-full bg-primary-green text-white p-4 rounded-xl font-bold text-lg shadow-lg">Confirm Cloud Credit</button>
+          <button onClick={handleAddPayment} className="w-full bg-primary-green text-white p-4 rounded-xl font-bold text-lg shadow-lg">Confirm Payment</button>
           <button onClick={() => setShowForm(false)} className="w-full text-gray-400">Cancel</button>
         </div>
       )}
 
       <div className="space-y-3">
-        <h3 className="font-bold text-gray-800">Outstanding Balances (Sync: Atlas)</h3>
+        <h3 className="font-bold text-gray-800">Outstanding Balances</h3>
         {outstandingCustomers.map(customer => (
           <div key={customer._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
             <div>
