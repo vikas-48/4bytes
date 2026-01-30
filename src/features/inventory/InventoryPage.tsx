@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { productApi } from '../../services/api';
-import { Plus, X, Mic, Save } from 'lucide-react';
+import { Plus, X, Save } from 'lucide-react';
+import type { Product } from '../../db/db';
 
 export const InventoryPage: React.FC = () => {
-    const [products, setProducts] = useState<any[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [isAdding, setIsAdding] = useState(false);
     const [newProduct, setNewProduct] = useState({ name: '', price: '', stock: '', category: 'default', unit: 'piece' });
 

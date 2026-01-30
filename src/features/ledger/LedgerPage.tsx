@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { billApi } from '../../services/api';
-import { Receipt, Calendar, User, Phone, Tag } from 'lucide-react';
+import { Calendar, User } from 'lucide-react';
+import type { Transaction } from '../../db/db';
 
 export const LedgerPage: React.FC = () => {
-    const [bills, setBills] = useState<any[]>([]);
+    const [bills, setBills] = useState<Transaction[]>([]);
     const [filterMode, setFilterMode] = useState<'ALL' | 'cash' | 'online' | 'ledger'>('ALL');
 
     useEffect(() => {
@@ -39,7 +40,7 @@ export const LedgerPage: React.FC = () => {
         .filter(e => e.paymentType !== 'ledger')
         .reduce((sum, e) => sum + e.totalAmount, 0);
 
-    const formatDate = (dateString: string) => {
+    const formatDate = (dateString: string | number) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-IN', {
             day: '2-digit',
@@ -127,7 +128,7 @@ export const LedgerPage: React.FC = () => {
                             )}
                         </div>
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-50">
-                            {bill.items.map((item: any, idx: number) => (
+                            {bill.items.map((item, idx) => (
                                 <div key={idx} className="bg-gray-50 border px-3 py-1 rounded-lg flex items-center gap-2">
                                     <span className="text-xs font-bold text-gray-600">{item.name}</span>
                                     <span className="text-[10px] font-black text-gray-400">×{item.quantity}</span>

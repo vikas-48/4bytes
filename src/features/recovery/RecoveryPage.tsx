@@ -1,56 +1,76 @@
-import { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useState, useEffect } from 'react';
 import { Phone, ShieldCheck, TrendingUp, AlertTriangle, Zap } from 'lucide-react';
 import DefaulterCard from '../../components/recovery/DefaulterCard';
-import LiveCallModal from '../../components/recovery/LiveCallModal';
+import LiveCallModal, { type RecoveryCustomer } from '../../components/recovery/LiveCallModal';
 import RecoveryMissionControl from '../../components/recovery/RecoveryMissionControl';
 import { useToast } from '../../contexts/ToastContext';
-import { db } from '../../db/db';
+import { customerApi } from '../../services/api';
+import type { Customer } from '../../db/db';
 
 export default function RecoveryPage() {
-    const { addToast } = useToast() as any;
+    const { addToast } = useToast();
 
-    // Fetch all customers from Khata
-    const allCustomers = useLiveQuery(() => db.customers.toArray());
+    // Fetch all customers from API
+    const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
 
-    const [activeCall, setActiveCall] = useState<any>(null);
+    useEffect(() => {
+        loadCustomers();
+    }, []);
+
+    const loadCustomers = async () => {
+        try {
+            const response = await customerApi.getAll();
+            setAllCustomers(response.data);
+        } catch (e) {
+            console.error("Failed to load customers", e);
+            addToast("Failed to sync customers", "error");
+        }
+    };
+
+    const [activeCall, setActiveCall] = useState<RecoveryCustomer | null>(null);
     const [isMissionControlOpen, setIsMissionControlOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'ACTION' | 'SCHEDULED'>('ACTION');
 
     // Action Queue: Balance > 0 AND (No promise date OR Promise date <= Now)
     const actionQueue = allCustomers?.filter(customer => {
         const hasBalance = customer.khataBalance > 0;
-        const isPastPromiseDate = !customer.nextCallDate || customer.nextCallDate <= Date.now();
+        const isPastPromiseDate = !customer.nextCallDate || (typeof customer.nextCallDate === 'number' && customer.nextCallDate <= Date.now());
         return hasBalance && isPastPromiseDate;
     }) || [];
 
     // Scheduled Queue: Balance > 0 AND (Promise date > Now)
     const scheduledQueue = allCustomers?.filter(customer => {
         const hasBalance = customer.khataBalance > 0;
-        const isFuturePromiseDate = customer.nextCallDate && customer.nextCallDate > Date.now();
+        const isFuturePromiseDate = customer.nextCallDate && (typeof customer.nextCallDate === 'number' && customer.nextCallDate > Date.now());
         return hasBalance && isFuturePromiseDate;
     }) || [];
 
     const displayCustomers = (viewMode === 'ACTION' ? actionQueue : scheduledQueue).map(customer => {
-        const daysOverdue = Math.floor((Date.now() - customer.createdAt) / (1000 * 60 * 60 * 24));
+        const createdAt = customer.createdAt
+            ? (typeof customer.createdAt === 'string' ? new Date(customer.createdAt).getTime() : customer.createdAt)
+            : Date.now();
+        const daysOverdue = Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
         let risk: 'LOW' | 'MEDIUM' | 'HIGH';
-        if (customer.trustScore >= 80 && customer.khataBalance < 1000) risk = 'LOW';
-        else if (customer.trustScore >= 50 || customer.khataBalance < 2000) risk = 'MEDIUM';
+        const trustScore = customer.trustScore || 0;
+        const khataBalance = customer.khataBalance || 0;
+
+        if (trustScore >= 80 && khataBalance < 1000) risk = 'LOW';
+        else if (trustScore >= 50 || khataBalance < 2000) risk = 'MEDIUM';
         else risk = 'HIGH';
 
         return {
-            id: customer.id!,
-            name: customer.name,
-            amount: customer.khataBalance,
+            id: customer._id || (customer.id ? customer.id.toString() : 'unknown'),
+            name: customer.name || 'Unknown',
+            amount: khataBalance,
             days: daysOverdue > 0 ? daysOverdue : 1,
-            phone: customer.phone || '+919876543210',
+            phone: customer.phoneNumber, // Updated from phone to phoneNumber
             risk: risk,
             nextCallDate: customer.nextCallDate,
             recoveryStatus: customer.recoveryStatus
         };
     });
 
-    const handleCallResult = (result: any) => {
+    const handleCallResult = (result: { status: string; promiseDate: string }) => {
         if (result.status === 'success') {
             addToast(`✅ Promise recorded: ${result.promiseDate}`, 'success');
         }
@@ -58,7 +78,9 @@ export default function RecoveryPage() {
 
     const totalPending = (allCustomers?.filter(c => c.khataBalance > 0) || []).reduce((sum, d) => sum + d.khataBalance, 0);
     const criticalCount = actionQueue.filter(c => {
-        if (c.trustScore < 50 && c.khataBalance > 2000) return true;
+        const trustScore = c.trustScore || 0;
+        const khataBalance = c.khataBalance || 0;
+        if (trustScore < 50 && khataBalance > 2000) return true;
         return false;
     }).length;
 
@@ -175,10 +197,10 @@ export default function RecoveryPage() {
                 isOpen={isMissionControlOpen}
                 onClose={() => setIsMissionControlOpen(false)}
                 customers={actionQueue.map(c => ({
-                    id: c.id!,
+                    id: c._id || (c.id ? c.id.toString() : 'unknown'),
                     name: c.name,
                     amount: c.khataBalance,
-                    phone: c.phone
+                    phone: c.phoneNumber
                 }))}
             />
         </div>

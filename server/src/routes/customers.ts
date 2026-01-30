@@ -41,4 +41,19 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Update customer by ID
+router.patch('/:id', async (req, res) => {
+    try {
+        const customer = await Customer.findByIdAndUpdate(
+            req.params.id,
+            { $set: req.body },
+            { new: true }
+        );
+        if (!customer) return res.status(404).json({ message: 'Customer not found' });
+        res.json(customer);
+    } catch (err: any) {
+        res.status(400).json({ message: err.message });
+    }
+});
+
 export { router as customerRouter };

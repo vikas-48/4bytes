@@ -2,12 +2,23 @@ import { useEffect, useState } from 'react';
 import Vapi from '@vapi-ai/web';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Mic, User, CheckCircle, AlertTriangle } from 'lucide-react';
-import { db } from '../../db/db';
+import { customerApi } from '../../services/api';
 
 // Initialize Vapi with your API key
 const vapi = new Vapi('7c654710-662a-4da2-9788-592f15cc2fcc');
 
-const LiveCallModal = ({ customer, isOpen, onClose, onResult }: { customer: any, isOpen: boolean, onClose: () => void, onResult: (res: any) => void }) => {
+export interface RecoveryCustomer {
+    id: number | string;
+    name: string;
+    amount: number;
+    days: number;
+    phone: string;
+    risk?: 'LOW' | 'MEDIUM' | 'HIGH';
+    nextCallDate?: number;
+    recoveryStatus?: string;
+}
+
+const LiveCallModal = ({ customer, isOpen, onClose, onResult }: { customer: RecoveryCustomer | null, isOpen: boolean, onClose: () => void, onResult: (res: any) => void }) => {
     const [status, setStatus] = useState<'connecting' | 'active' | 'completed' | 'failed'>('connecting');
     const [transcript, setTranscript] = useState<any[]>([]);
     const [sentiment, setSentiment] = useState<'neutral' | 'positive' | 'negative'>('neutral');
@@ -49,13 +60,13 @@ const LiveCallModal = ({ customer, isOpen, onClose, onResult }: { customer: any,
 
         // Only update if a valid promise date was mentioned
         if (!extractedDate || extractedDate.toLowerCase() === 'none' || extractedDate.toLowerCase() === 'no') {
-            await db.customers.update(customer.id, { recoveryStatus: 'Call Again' });
+            await customerApi.update(customer.id.toString(), { recoveryStatus: 'Call Again' });
             return;
         }
 
         try {
             const nextDate = calculatePromiseDate(extractedDate);
-            await db.customers.update(customer.id, {
+            await customerApi.update(customer.id.toString(), {
                 nextCallDate: nextDate,
                 recoveryStatus: 'Promised',
                 recoveryNotes: `AI Summary: Promised to pay on ${extractedDate}`
@@ -68,7 +79,7 @@ const LiveCallModal = ({ customer, isOpen, onClose, onResult }: { customer: any,
 
     useEffect(() => {
         let timer: any;
-        if (isOpen) {
+        if (isOpen && customer) {
             // RESET STATE
             setStatus('connecting');
             setTranscript([]);
@@ -120,6 +131,7 @@ const LiveCallModal = ({ customer, isOpen, onClose, onResult }: { customer: any,
     };
 
     const startCall = async () => {
+        if (!customer) return;
         setStatus('connecting');
         const formattedPhone = formatPhone(customer.phone);
 

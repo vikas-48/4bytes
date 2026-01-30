@@ -14,6 +14,8 @@ const kiranaProducts = [
     { name: 'Parle-G Biscuits', price: 10, stock: 100, minStock: 30, icon: '🍪', category: 'Biscuits', unit: 'packet' },
     { name: 'Sugar', price: 45, stock: 50, minStock: 15, icon: '🧂', category: 'Sugar & Salt', unit: 'kg' },
     { name: 'Tata Salt', price: 22, stock: 60, minStock: 20, icon: '🧂', category: 'Sugar & Salt', unit: 'kg' },
+    { name: 'Fortune Oil (1L)', price: 150, stock: 40, minStock: 10, icon: '🛢️', category: 'Oil & Spices', unit: 'packet' },
+    { name: 'Toor Dal', price: 110, stock: 35, minStock: 10, icon: '🍲', category: 'Pulses', unit: 'kg' },
 ];
 
 async function seed() {

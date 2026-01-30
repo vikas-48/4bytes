@@ -5,6 +5,8 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import passport from 'passport';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import './config/passport.js';
 import { authRouter } from './routes/auth.js';
 import { productRouter } from './routes/products.js';
@@ -12,15 +14,31 @@ import { customerRouter } from './routes/customers.js';
 import { billRouter } from './routes/bills.js';
 import { ledgerRouter } from './routes/ledger.js';
 import { groupBuyRouter } from './routes/groupBuy.js';
+import { whatsappRouter } from './routes/whatsapp.js';
 
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
+
+// Attach socket to request
+app.use((req: any, res, next) => {
+    req.io = io;
+    next();
+});
 
 // Routes
 app.use('/api/auth', authRouter);
@@ -29,13 +47,18 @@ app.use('/api/customers', customerRouter);
 app.use('/api/bills', billRouter);
 app.use('/api/ledger', ledgerRouter);
 app.use('/api/group-buy', groupBuyRouter);
+app.use('/api/whatsapp', whatsappRouter);
+
+io.on('connection', (socket) => {
+    console.log('User connected to socket:', socket.id);
+});
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI!)
     .then(() => {
         console.log('Connected to MongoDB Atlas');
-        app.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT}`);
+        httpServer.listen(PORT, () => {
+            console.log(`Server (ShopOS) is running on port ${PORT}`);
         });
     })
     .catch((err) => {

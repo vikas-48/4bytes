@@ -28,6 +28,34 @@ export interface Customer {
   loyaltyPoints?: number;
   totalPurchases?: number;
   createdAt?: string | number;
+  nextCallDate?: number;
+  recoveryStatus?: 'Promised' | 'Call Again' | 'Busy' | 'Failed';
+  recoveryNotes?: string;
+}
+
+export interface Transaction {
+  _id: string;
+  paymentType: 'cash' | 'online' | 'ledger' | string;
+  totalAmount: number;
+  createdAt: string | number;
+  customerId?: {
+    phoneNumber: string;
+    name?: string;
+  };
+  items: {
+    name: string;
+    quantity: number;
+    price: number;
+  }[];
+}
+
+export interface Deal {
+  _id: string;
+  groupName?: string;
+  members?: any[];
+  products: { productId: string | null; quantity: number }[];
+  totalAmount: number;
+  status: string;
 }
 
 // Dummy db implementation to prevent crash on minor untouched files
@@ -37,5 +65,5 @@ export const db: any = {
   ledger: { toArray: async () => [], add: async () => { }, reverse: () => ({ toArray: async () => [] }), orderBy: () => ({ reverse: () => ({ toArray: async () => [] }) }) },
   transactions: { toArray: async () => [], add: async () => { }, where: () => ({ above: () => ({ toArray: async () => [] }) }) },
   payments: { toArray: async () => [], add: async () => { } },
-  transaction: async (mode: string, tables: string[], fn: Function) => await fn()
+  transaction: async (mode: string, tables: string[], fn: () => Promise<any>) => await fn()
 };

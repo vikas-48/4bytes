@@ -9,6 +9,8 @@ import { ProductPage } from './features/products/ProductPage';
 import { AnalyticsPage } from './features/analytics/AnalyticsPage';
 import { PaymentPage } from './features/payments/PaymentPage';
 import { LedgerPage } from './features/ledger/LedgerPage';
+import WhatsAppPage from './features/whatsapp/WhatsAppPage';
+import RecoveryPage from './features/recovery/RecoveryPage';
 import { CartProvider } from './contexts/CartContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -42,6 +44,8 @@ function App() {
                   <Route path="analytics" element={<AnalyticsPage />} />
                   <Route path="payments" element={<PaymentPage />} />
                   <Route path="ledger" element={<LedgerPage />} />
+                  <Route path="whatsapp" element={<WhatsAppPage />} />
+                  <Route path="recovery" element={<RecoveryPage />} />
                 </Route>
               </Routes>
             </BrowserRouter>

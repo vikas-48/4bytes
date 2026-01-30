@@ -31,6 +31,7 @@ export const customerApi = {
     getAll: () => api.get('/customers'),
     getByPhone: (phone: string) => api.get(`/customers/${phone}`),
     create: (data: any) => api.post('/customers', data),
+    update: (id: string, data: any) => api.patch(`/customers/${id}`, data),
 };
 
 export const billApi = {
@@ -48,7 +49,7 @@ export const ledgerApi = {
 export const groupBuyApi = {
     getAll: () => api.get('/group-buy'),
     create: (data: any) => api.post('/group-buy', data),
-    join: (id: string, customerId: string) => api.patch(`/group-buy/${id}/join`, { customerId }),
+    join: (id: string, customerId: string, units: number = 1) => api.patch(`/group-buy/${id}/join`, { customerId, units }),
 };
 
 export default api;

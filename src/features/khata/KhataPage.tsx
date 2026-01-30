@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { customerApi } from '../../services/api';
-import { Plus, User, Phone, X, Save, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Plus, User, Phone, X, Save } from 'lucide-react';
+import type { Customer } from '../../db/db';
 
 export const KhataPage: React.FC = () => {
-    const [customers, setCustomers] = useState<any[]>([]);
+    const [customers, setCustomers] = useState<Customer[]>([]);
     const [isAdding, setIsAdding] = useState(false);
     const [newCustomer, setNewCustomer] = useState({ name: '', phoneNumber: '' });
 
@@ -30,12 +31,6 @@ export const KhataPage: React.FC = () => {
         } catch (err) {
             console.error('Failed to save customer', err);
         }
-    };
-
-    const getTrustColor = (balance: number) => {
-        if (balance <= 500) return 'text-green-600 bg-green-100';
-        if (balance <= 1500) return 'text-yellow-600 bg-yellow-100';
-        return 'text-red-600 bg-red-100';
     };
 
     return (

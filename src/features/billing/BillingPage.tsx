@@ -116,7 +116,7 @@ export const BillingPage: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col relative bg-gray-50 dark:bg-gray-900">
+        <div className="flex flex-col relative bg-gray-50 dark:bg-gray-900 min-h-full">
             {/* Search Bar */}
             <div className="sticky top-0 p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 space-y-3 z-30">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t.tapToAdd}</h2>
@@ -135,8 +135,8 @@ export const BillingPage: React.FC = () => {
             </div>
 
             {/* Product Grid */}
-            <div className="flex-1 overflow-y-auto p-4 content-start">
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pb-24">
+            <div className="p-4 pb-32">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                     {products?.filter(p =>
                         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         p.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -162,10 +162,10 @@ export const BillingPage: React.FC = () => {
 
             {/* Sticky Order Button (if not in checkout) */}
             {!showCheckout && cart.length > 0 && (
-                <div className="absolute bottom-4 left-4 right-4 z-20">
+                <div className="fixed bottom-24 left-4 right-4 md:bottom-6 md:left-72 md:right-8 z-40">
                     <button
                         onClick={() => setShowCheckout(true)}
-                        className="w-full bg-primary-green text-white p-4 rounded-2xl shadow-lg flex justify-between items-center animate-slide-up hover:shadow-xl transition-shadow"
+                        className="w-full bg-primary-green text-white p-4 rounded-2xl shadow-xl flex justify-between items-center animate-slide-up hover:shadow-2xl transition-all border border-white/10 backdrop-blur-md"
                     >
                         <div className="flex items-center gap-3">
                             <span className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">{cart.reduce((a, b) => a + b.quantity, 0)}</span>

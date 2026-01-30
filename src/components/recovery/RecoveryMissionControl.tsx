@@ -4,7 +4,7 @@ import {
     Phone, CheckCircle, X, Calendar,
     Mic, ShieldCheck, TrendingUp, Loader2, Zap
 } from 'lucide-react';
-import { db } from '../../db/db';
+import { customerApi } from '../../services/api';
 
 const RecoveryMissionControl = ({ isOpen, onClose, customers }: { isOpen: boolean, onClose: () => void, customers: any[] }) => {
     const [queue, setQueue] = useState<any[]>([]);
@@ -49,10 +49,10 @@ const RecoveryMissionControl = ({ isOpen, onClose, customers }: { isOpen: boolea
         return now.getTime() + (1 * 24 * 60 * 60 * 1000); // Default to tomorrow
     };
 
-    const updateCustomerPromise = async (customerId: number, dateStr: string) => {
+    const updateCustomerPromise = async (customerId: string, dateStr: string) => {
         try {
             const nextDate = calculatePromiseDate(dateStr);
-            await db.customers.update(customerId, {
+            await customerApi.update(customerId.toString(), {
                 nextCallDate: nextDate,
                 recoveryStatus: 'Promised',
                 recoveryNotes: `Mission Control: ${dateStr}`
@@ -139,18 +139,27 @@ const RecoveryMissionControl = ({ isOpen, onClose, customers }: { isOpen: boolea
             setTimeout(() => {
                 // If odd ID, simulate failure/no-response (Stay in Action queue)
                 // If even ID, simulate promise (Move to Scheduled)
-                const isSuccess = current.id % 2 === 0;
+                // Handle Mongo ObjectID (hex string) or numeric ID
+                let isSuccess = false;
+                const idStr = current.id.toString();
+                const lastChar = idStr.slice(-1);
+                if (!isNaN(parseInt(lastChar))) {
+                    isSuccess = parseInt(lastChar) % 2 === 0;
+                } else {
+                    isSuccess = idStr.charCodeAt(idStr.length - 1) % 2 === 0;
+                }
+
                 const result = isSuccess ? 'promised' : 'failed';
                 finishStep(current.id, result, isSuccess ? 'next week' : '', index);
             }, 1500);
         }
     };
 
-    const updateStatus = (id: number, status: string) => {
+    const updateStatus = (id: string, status: string) => {
         setQueue(prev => prev.map(c => c.id === id ? { ...c, status } : c));
     };
 
-    const finishStep = async (id: number, result: string, dateStr: string, index: number) => {
+    const finishStep = async (id: string, result: string, dateStr: string, index: number) => {
         updateStatus(id, result);
 
         // ONLY update database if customer actually PROMISED
@@ -163,7 +172,7 @@ const RecoveryMissionControl = ({ isOpen, onClose, customers }: { isOpen: boolea
             // Thus, customer stays in actionQueue because nextCallDate is null or in the past.
             setStats(prev => ({ ...prev, failed: prev.failed + 1 }));
             // Optional: Mark recoveryStatus as 'Call Again' in DB
-            await db.customers.update(id, { recoveryStatus: 'Call Again' });
+            await customerApi.update(id.toString(), { recoveryStatus: 'Call Again' });
         }
 
         if (index + 1 < queue.length) {

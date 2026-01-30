@@ -1,39 +1,56 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ShoppingBag, Sparkles, Truck } from 'lucide-react';
+
+import { ShoppingBag, Truck } from 'lucide-react';
 import GroupBuyCard from '../../components/GroupBuyCard';
 import HostDealModal from '../../components/HostDealModal';
 import DigitalPassModal from '../../components/DigitalPassModal';
 import { groupBuyApi } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
+import type { Deal } from '../../db/db';
 import { MY_ORDERS } from '../../data/orderHistory';
 
 export default function GroupBuyPage() {
-    const [activeDeals, setActiveDeals] = useState<any[]>([]);
+    const [activeDeals, setActiveDeals] = useState<Deal[]>([]);
     const { addToast } = useToast();
     const [isHostModalOpen, setIsHostModalOpen] = useState(false);
     const [view, setView] = useState<'active' | 'history'>('active');
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadDeals();
     }, []);
 
     const loadDeals = async () => {
+        setLoading(true);
         try {
             const response = await groupBuyApi.getAll();
             setActiveDeals(response.data);
         } catch (e) {
             console.error("Failed to load deals", e);
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleNewDeal = async (newDeal: any) => {
         try {
             await groupBuyApi.create({
-                groupName: newDeal.product_name,
-                products: [{ productId: newDeal.productId || null, quantity: newDeal.target_units }],
-                totalAmount: newDeal.deal_price * newDeal.target_units,
+                groupName: newDeal.groupName, // Use the proper name
+                products: newDeal.products,
+                totalAmount: newDeal.totalAmount,
+                marketPrice: newDeal.marketPrice,
+                dealPrice: newDeal.dealPrice,
+                targetUnits: newDeal.targetUnits,
+                currentUnits: 0,
+                category: newDeal.category,
+                image_url: newDeal.image_url,
+                aiInsight: "Host-Optimized Deal",
+                tiers: [
+                    { goal: Math.round(newDeal.targetUnits * 0.1), price: Math.round(newDeal.marketPrice * 0.95), label: 'Silver' },
+                    { goal: Math.round(newDeal.targetUnits * 0.5), price: Math.round(newDeal.marketPrice * 0.90), label: 'Gold' },
+                    { goal: newDeal.targetUnits, price: newDeal.dealPrice, label: 'Platinum' }
+                ],
                 status: 'active'
             });
             addToast("🎉 Deal Launched on MongoDB Atlas!", "success");
@@ -80,14 +97,45 @@ export default function GroupBuyPage() {
                 </div>
 
                 {view === 'active' ? (
-                    <div className="space-y-6">
-                        {activeDeals.map((deal) => (
-                            <GroupBuyCard key={deal._id} deal={deal} />
-                        ))}
+                    <div className="space-y-6 min-h-[50vh]">
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-4">
+                                <div className="w-10 h-10 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+                                <p className="font-bold text-xs uppercase tracking-widest">Finding best prices...</p>
+                            </div>
+                        ) : activeDeals.length > 0 ? (
+                            activeDeals.map((deal) => (
+                                <GroupBuyCard key={deal._id} deal={deal} onShowPass={setSelectedOrder} />
+                            ))
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in opacity-50">
+                                <ShoppingBag size={40} className="text-gray-300 dark:text-gray-600 mb-2" />
+                                <p className="text-gray-400 text-sm">No active deals right now.</p>
+                            </div>
+                        )}
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        <p className="text-center text-gray-500 py-10">Historical orders fetched from MongoDB</p>
+                    // ... ORDER HISTORY LIST ...
+                    <div className="space-y-4 animate-fade-in">
+                        {MY_ORDERS.map((order) => (
+                            <div key={order.id} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="font-bold text-gray-800 dark:text-white">{order.dealName}</h3>
+                                    <p className="text-xs text-gray-500 font-medium mt-1">{order.date} • {order.quantity} Units</p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${order.status === 'Delivered' ? 'bg-gray-100 text-gray-600 border-gray-200' : 'bg-blue-100 text-blue-600 border-blue-200'}`}>
+                                            {order.status}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedOrder(order)}
+                                    className="w-full sm:w-auto bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+                                >
+                                    <Truck size={14} /> View Pass
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 )}
 

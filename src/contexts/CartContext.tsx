@@ -8,10 +8,10 @@ export interface CartItem extends Product {
 interface CartContextType {
     cart: CartItem[];
     addToCart: (product: Product) => void;
-    removeFromCart: (productId: number) => void;
-    updateQuantity: (productId: number, quantity: number) => void;
-    increaseQuantity: (productId: number) => void;
-    decreaseQuantity: (productId: number) => void;
+    removeFromCart: (productId: string) => void;
+    updateQuantity: (productId: string, quantity: number) => void;
+    increaseQuantity: (productId: string) => void;
+    decreaseQuantity: (productId: string) => void;
     clearCart: () => void;
     cartTotal: number;
 }
@@ -23,34 +23,34 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const addToCart = (product: Product) => {
         setCart(prev => {
-            const existing = prev.find(p => p.id === product.id);
+            const existing = prev.find(p => p._id === product._id);
             if (existing) {
-                return prev.map(p => p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p);
+                return prev.map(p => p._id === product._id ? { ...p, quantity: p.quantity + 1 } : p);
             }
             return [...prev, { ...product, quantity: 1 }];
         });
     };
 
-    const removeFromCart = (productId: number) => {
-        setCart(prev => prev.filter(p => p.id !== productId));
+    const removeFromCart = (productId: string) => {
+        setCart(prev => prev.filter(p => p._id !== productId));
     };
 
-    const updateQuantity = (productId: number, quantity: number) => {
+    const updateQuantity = (productId: string, quantity: number) => {
         if (quantity <= 0) {
             removeFromCart(productId);
             return;
         }
-        setCart(prev => prev.map(p => p.id === productId ? { ...p, quantity } : p));
+        setCart(prev => prev.map(p => p._id === productId ? { ...p, quantity } : p));
     };
 
-    const increaseQuantity = (productId: number) => {
-        setCart(prev => prev.map(p => p.id === productId ? { ...p, quantity: p.quantity + 1 } : p));
+    const increaseQuantity = (productId: string) => {
+        setCart(prev => prev.map(p => p._id === productId ? { ...p, quantity: p.quantity + 1 } : p));
     };
 
-    const decreaseQuantity = (productId: number) => {
+    const decreaseQuantity = (productId: string) => {
         setCart(prev => {
             return prev.map(p => {
-                if (p.id === productId) {
+                if (p._id === productId) {
                     const newQuantity = p.quantity - 1;
                     return newQuantity > 0 ? { ...p, quantity: newQuantity } : p;
                 }

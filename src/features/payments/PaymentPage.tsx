@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, AlertCircle } from 'lucide-react';
 import { ledgerApi, customerApi } from '../../services/api';
+import type { Customer } from '../../db/db';
 
 export const PaymentPage: React.FC = () => {
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [paymentAmount, setPaymentAmount] = useState(0);

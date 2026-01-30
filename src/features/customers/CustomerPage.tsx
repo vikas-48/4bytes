@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Phone, User, Calendar, History, AlertCircle, ChevronRight } from 'lucide-react';
+import { Plus, Search, Phone, User, Calendar, History, AlertCircle } from 'lucide-react';
 import { customerApi } from '../../services/api';
+import type { Customer } from '../../db/db';
 
 export const CustomerPage: React.FC = () => {
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
