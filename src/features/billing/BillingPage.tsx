@@ -170,11 +170,11 @@ export const BillingPage: React.FC = () => {
             if (method === 'ledger') {
                 const customer = await db.customers.where('phoneNumber').equals(selectedCustomer.phoneNumber).first();
                 if (customer) {
-                    const newActiveAmount = customer.activeKhataAmount + cartTotal;
+                    const newActiveAmount = (customer.activeKhataAmount || 0) + cartTotal;
                     await db.customers.update(customer.id!, {
                         activeKhataAmount: newActiveAmount,
-                        maxHistoricalKhataAmount: Math.max(customer.maxHistoricalKhataAmount, newActiveAmount),
-                        khataTransactions: customer.khataTransactions + 1
+                        maxHistoricalKhataAmount: Math.max((customer.maxHistoricalKhataAmount || 0), newActiveAmount),
+                        khataTransactions: (customer.khataTransactions || 0) + 1
                     });
 
                     // Add to local ledger for score calculation
