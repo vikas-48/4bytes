@@ -157,7 +157,7 @@ export const LedgerPage: React.FC = () => {
                         ))
                     )}
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };

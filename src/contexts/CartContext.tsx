@@ -7,17 +7,10 @@ export interface CartItem extends Product {
 
 interface CartContextType {
     cart: CartItem[];
-<<<<<<< HEAD
-    addToCart: (product: Product) => void;
-    removeFromCart: (productId: string) => void;
-    updateQuantity: (productId: string, quantity: number) => void;
-    increaseQuantity: (productId: string) => void;
-=======
     addToCart: (product: Product, currentStock: number) => boolean;
     removeFromCart: (productId: string) => void;
     updateQuantity: (productId: string, quantity: number, currentStock: number) => boolean;
     increaseQuantity: (productId: string, currentStock: number) => boolean;
->>>>>>> origin/main
     decreaseQuantity: (productId: string) => void;
     clearCart: () => void;
     cartTotal: number;
@@ -33,9 +26,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCart(prev => {
             const existing = prev.find(p => p._id === product._id);
             if (existing) {
-<<<<<<< HEAD
-                return prev.map(p => p._id === product._id ? { ...p, quantity: p.quantity + 1 } : p);
-=======
                 if (existing.quantity + 1 > currentStock) {
                     success = false;
                     return prev;
@@ -45,7 +35,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (currentStock <= 0) {
                 success = false;
                 return prev;
->>>>>>> origin/main
             }
             return [...prev, { ...product, quantity: 1 }];
         });
@@ -56,30 +45,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCart(prev => prev.filter(p => p._id !== productId));
     };
 
-<<<<<<< HEAD
-    const updateQuantity = (productId: string, quantity: number) => {
-=======
     const updateQuantity = (productId: string, quantity: number, currentStock: number) => {
->>>>>>> origin/main
         if (quantity <= 0) {
             removeFromCart(productId);
             return true;
         }
-<<<<<<< HEAD
-        setCart(prev => prev.map(p => p._id === productId ? { ...p, quantity } : p));
-    };
-
-    const increaseQuantity = (productId: string) => {
-        setCart(prev => prev.map(p => p._id === productId ? { ...p, quantity: p.quantity + 1 } : p));
-    };
-
-    const decreaseQuantity = (productId: string) => {
-        setCart(prev => {
-            return prev.map(p => {
-                if (p._id === productId) {
-                    const newQuantity = p.quantity - 1;
-                    return newQuantity > 0 ? { ...p, quantity: newQuantity } : p;
-=======
         if (quantity > currentStock) {
             return false;
         }
@@ -97,7 +67,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         return p;
                     }
                     return { ...p, quantity: p.quantity + 1 };
->>>>>>> origin/main
                 }
                 return p;
             });

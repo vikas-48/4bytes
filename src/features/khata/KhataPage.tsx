@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { customerApi } from '../../services/api';
 import { Plus, User, Phone, X, Save } from 'lucide-react';
-<<<<<<< HEAD
 import type { Customer } from '../../db/db';
-=======
->>>>>>> origin/main
 
 export const KhataPage: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);

@@ -64,9 +64,5 @@ export const db: any = {
   ledger: { toArray: async () => [], add: async () => { }, reverse: () => ({ toArray: async () => [] }), orderBy: () => ({ reverse: () => ({ toArray: async () => [] }) }) },
   transactions: { toArray: async () => [], add: async () => { }, where: () => ({ above: () => ({ toArray: async () => [] }) }) },
   payments: { toArray: async () => [], add: async () => { } },
-<<<<<<< HEAD
-  transaction: async (mode: string, tables: string[], fn: () => Promise<any>) => await fn()
-=======
   transaction: async (_mode: string, _tables: string[], fn: Function) => await fn()
->>>>>>> origin/main
 };

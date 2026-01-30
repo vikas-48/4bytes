@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { productApi } from '../../services/api';
 import { Plus, X, Save } from 'lucide-react';
-<<<<<<< HEAD
 import type { Product } from '../../db/db';
-=======
->>>>>>> origin/main
 
 export const InventoryPage: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);

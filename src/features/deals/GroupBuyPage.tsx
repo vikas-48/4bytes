@@ -1,20 +1,12 @@
 import { useEffect, useState } from 'react';
-<<<<<<< HEAD
-
 import { ShoppingBag, Truck } from 'lucide-react';
-=======
-import { ShoppingBag } from 'lucide-react';
->>>>>>> origin/main
 import GroupBuyCard from '../../components/GroupBuyCard';
 import HostDealModal from '../../components/HostDealModal';
 import DigitalPassModal from '../../components/DigitalPassModal';
 import { groupBuyApi } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
-<<<<<<< HEAD
 import type { Deal } from '../../db/db';
 import { MY_ORDERS } from '../../data/orderHistory';
-=======
->>>>>>> origin/main
 
 export default function GroupBuyPage() {
     const [activeDeals, setActiveDeals] = useState<Deal[]>([]);
@@ -122,7 +114,6 @@ export default function GroupBuyPage() {
                         )}
                     </div>
                 ) : (
-<<<<<<< HEAD
                     // ... ORDER HISTORY LIST ...
                     <div className="space-y-4 animate-fade-in">
                         {MY_ORDERS.map((order) => (
@@ -144,10 +135,6 @@ export default function GroupBuyPage() {
                                 </button>
                             </div>
                         ))}
-=======
-                    <div className="space-y-4">
-                        <p className="text-center text-gray-500 py-10">Historical orders from your shop network</p>
->>>>>>> origin/main
                     </div>
                 )}
 

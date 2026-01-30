@@ -10,7 +10,9 @@ const router = express.Router();
 // === INSANE HACK: FREE MOCK DATABASE ===
 const DB = {
     customers: new Map<string, any>([
-        ['whatsapp:+918712316204', { name: 'Raju Bhai', pending: 550, dueSince: '10 days', lang: 'en' }],
+        // TEST NUMBER (User's device)
+        ['whatsapp:+918712316204', { name: 'Test User (Raju)', pending: 550, dueSince: '10 days', lang: 'en' }],
+        // Dummy
         ['whatsapp:+919999999999', { name: 'Lakshmi Akka', pending: 1200, dueSince: '5 days', lang: 'hi' }]
     ]),
     orders: [] as any[]
@@ -114,27 +116,65 @@ router.get('/analytics', (req, res) => {
     res.json(85400);
 });
 
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
 router.post('/broadcast-reminders', async (req: any, res) => {
-    // Simulate broadcasting
+    // 1. Send Simulated UI Events (for the Demo Effect)
     if (req.io) {
         req.io.emit('whatsapp-event', {
             type: 'SYSTEM',
-            data: { item: '🚀 Sending payment reminders to 50 customers...', customer: 'ShopOS AI' }
+            data: { item: `🚀 Sending payment reminders to ${DB.customers.size} customers...`, customer: 'ShopOS AI' }
         });
+    }
 
-        // Simulate a reply coming in shortly
+    // 2. Actually Send via Twilio (Real World)
+    let sentCount = 0;
+    const errors: any[] = [];
+
+    try {
+        if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
+            console.warn("Missing Twilio Credentials - Skipping real send.");
+        } else {
+            // Loop through our "DB" customers
+            for (const [phone, customer] of DB.customers) {
+                try {
+                    // Create personalized message
+                    const { text } = createDuesResponse(customer, customer.lang || 'en');
+
+                    await twilioClient.messages.create({
+                        body: text,
+                        from: process.env.TWILIO_PHONE_NUMBER, // e.g., 'whatsapp:+14155238886'
+                        to: phone
+                    });
+                    sentCount++;
+                    console.log(`Sent reminder to ${phone}`);
+                } catch (err: any) {
+                    console.error(`Failed to send to ${phone}:`, err.message);
+
+                    let errorMsg = err.message;
+                    if (err.code === 63015) {
+                        errorMsg = "User has not joined Sandbox. Reply 'join <keyword>' to the Sandbox number.";
+                        console.warn(`⚠️ SANDBOX RESTRICTION: ${phone} must message ${process.env.TWILIO_PHONE_NUMBER} first.`);
+                    }
+                    errors.push({ phone, error: errorMsg });
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Critical Twilio Error:", e);
+    }
+
+    // Simulate a reply coming in shortly (for the demo flow)
+    if (req.io) {
         setTimeout(() => {
             req.io.emit('whatsapp-event', {
                 type: 'PAYMENT_RECEIVED',
                 data: { sender: 'Raju Bhai', amount: 550, customer: 'Raju Bhai', timestamp: new Date() }
             });
-            req.io.emit('whatsapp-event', {
-                type: 'NEW_ORDER',
-                data: { sender: 'Lakshmi Akka', item: 'Sugar', qty: 5, total: 200, orderId: 'ORD-999' }
-            });
         }, 4000);
     }
-    res.json({ success: true, count: 50 });
+
+    res.json({ success: true, count: sentCount, attempted: DB.customers.size, errors });
 });
 
 

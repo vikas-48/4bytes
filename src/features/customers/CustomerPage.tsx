@@ -62,7 +62,7 @@ export const CustomerPage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | number) => {
     if (!dateString) return 'No visits yet';
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -177,7 +177,7 @@ export const CustomerPage: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-1 order-1 md:order-3 text-sm text-gray-500 font-bold">
                       <div className="flex items-center gap-2"><History size={14} className="text-primary-green" /><span>Activity Log</span></div>
-                      <div className="flex items-center gap-2"><Calendar size={14} className="text-orange-400" /><span>{formatDate(customer.updatedAt)}</span></div>
+                      <div className="flex items-center gap-2"><Calendar size={14} className="text-orange-400" /><span>{formatDate(customer.lastVisit || customer.createdAt)}</span></div>
                     </div>
                   </div>
                 </div>
