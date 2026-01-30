@@ -115,4 +115,58 @@ router.get('/me', async (req, res) => {
     }
 });
 
+// Update Profile
+router.patch('/profile', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ message: 'No token' });
+
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+        const { name, avatar } = req.body;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            decoded.userId,
+            { $set: { name, avatar } },
+            { new: true }
+        ).select('-password');
+
+        res.json(updatedUser);
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Delete Account
+router.delete('/delete-account', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ message: 'No token' });
+
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+        const { password } = req.body;
+
+        const user = await User.findById(decoded.userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // If user has a password (manual auth), verify it
+        if (user.password) {
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch) {
+                return res.status(400).json({ message: 'Invalid password' });
+            }
+        }
+
+        // Delete user data (cascade manually if needed, for now just user)
+        // Ideally we delete products, customers, bills etc. linked to this user
+        // But for MVP just deleting user logic
+        await Product.deleteMany({ shopkeeperId: user._id });
+        // await Customer.deleteMany({ shopkeeperId: user._id }); // If strictly private
+        await User.findByIdAndDelete(decoded.userId);
+
+        res.json({ message: 'Account deleted successfully' });
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 export { router as authRouter };

@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Outlet, NavLink } from 'react-router-dom';
 import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun, WifiOff, Gift, BookOpen, LogOut } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+import { UserProfileModal } from '../UserProfileModal';
+
 export const MainLayout: React.FC = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [showMenu, setShowMenu] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const { t } = useLanguage();
@@ -54,16 +58,23 @@ export const MainLayout: React.FC = () => {
             <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-primary-green'} text-white p-4 shadow-md z-10 sticky top-0 border-b`}>
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        {user?.avatar ? (
-                            <img src={user.avatar} className="w-8 h-8 rounded-full border border-white/20" alt="Avatar" />
-                        ) : (
-                            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-bold text-xs uppercase">
-                                {user?.name?.[0] || 'S'}
+                        <button
+                            onClick={() => setShowProfileModal(true)}
+                            className="relative group focus:outline-none"
+                        >
+                            {user?.avatar ? (
+                                <img src={user.avatar} className="w-9 h-9 rounded-full border-2 border-white/30 group-hover:border-white transition-colors object-cover" alt="Profile" />
+                            ) : (
+                                <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center font-bold text-xs uppercase border-2 border-transparent group-hover:border-white/50 transition-all">
+                                    {user?.name?.[0] || 'S'}
+                                </div>
+                            )}
+                            <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 text-primary-green rounded-full p-0.5 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Users size={10} />
                             </div>
-                        )}
+                        </button>
                         <div>
-                            <h1 className="text-sm font-bold leading-none">KiranaLink</h1>
-                            <p className="text-[10px] opacity-70 font-medium">{user?.name}</p>
+                            <h1 className="text-lg font-bold leading-none tracking-tight">KiranaLink</h1>
                         </div>
                     </div>
 
@@ -98,34 +109,65 @@ export const MainLayout: React.FC = () => {
                 </div>
             </header>
 
-            {/* Mobile Menu */}
-            {showMenu && (
-                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border-b max-h-96 overflow-y-auto z-30`}>
-                    <div className="p-4 space-y-2">
-                        {navLinks.slice(4).map((link) => {
-                            const Icon = link.icon;
-                            return (
-                                <NavLink
-                                    key={link.path}
-                                    to={link.path}
+            <UserProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+
+            {/* Mobile Menu Modal */}
+            <AnimatePresence>
+                {showMenu && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowMenu(false)}
+                            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: -20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                            transition={{ type: "spring", duration: 0.3 }}
+                            className={`fixed z-50 top-20 right-4 w-64 rounded-2xl shadow-2xl overflow-hidden border ${darkMode
+                                ? 'bg-gray-800/90 border-gray-700 text-gray-100'
+                                : 'bg-white/90 border-gray-200 text-gray-900'
+                                }`}
+                        >
+                            <div className="p-4 border-b border-gray-200/10 flex justify-between items-center">
+                                <h3 className="font-semibold text-sm uppercase tracking-wider opacity-70">Menu</h3>
+                                <button
                                     onClick={() => setShowMenu(false)}
-                                    className={({ isActive }) =>
-                                        `flex items-center gap-3 p-3 rounded-lg transition-colors ${isActive
-                                            ? 'bg-primary-green text-white font-semibold'
-                                            : darkMode
-                                                ? 'text-gray-300 hover:bg-gray-700'
-                                                : 'text-gray-700 hover:bg-gray-100'
-                                        }`
-                                    }
+                                    className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"
                                 >
-                                    <Icon size={20} />
-                                    <span>{link.label}</span>
-                                </NavLink>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            <div className="p-2 space-y-1 max-h-[70vh] overflow-y-auto">
+                                {navLinks.slice(4).map((link) => {
+                                    const Icon = link.icon;
+                                    return (
+                                        <NavLink
+                                            key={link.path}
+                                            to={link.path}
+                                            onClick={() => setShowMenu(false)}
+                                            className={({ isActive }) =>
+                                                `flex items-center gap-3 p-3 rounded-xl transition-all ${isActive
+                                                    ? 'bg-primary-green text-white font-semibold shadow-md'
+                                                    : darkMode
+                                                        ? 'text-gray-300 hover:bg-gray-700/50 hover:pl-4'
+                                                        : 'text-gray-700 hover:bg-gray-100 hover:pl-4'
+                                                }`
+                                            }
+                                        >
+                                            <Icon size={20} className={link.path === '/deals' ? 'text-purple-500' : ''} />
+                                            <span>{link.label}</span>
+                                        </NavLink>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
 
             {/* Main Content Area */}
             <main className={`flex-1 overflow-y-auto p-4 pb-20 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
