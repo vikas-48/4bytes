@@ -132,4 +132,65 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
+// Update customer by ID
+router.patch('/:id', async (req, res) => {
+    try {
+        const customer = await Customer.findByIdAndUpdate(
+            req.params.id,
+            { $set: req.body },
+            { new: true }
+        );
+        if (!customer) return res.status(404).json({ message: 'Customer not found' });
+        res.json(customer);
+    } catch (err: any) {
+        res.status(400).json({ message: err.message });
+    }
+});
+// Seed customers
+router.post('/seed', auth, async (req, res) => {
+    try {
+        const dummyCustomers = [
+            { name: 'Raju Kumar', phoneNumber: '9876543210', khataBalance: 1200, trustScore: 85 },
+            { name: 'Anita Devi', phoneNumber: '9876543211', khataBalance: 450, trustScore: 92 },
+            { name: 'Suresh Yadav', phoneNumber: '9876543212', khataBalance: 2500, trustScore: 60 },
+            { name: 'Meena Kumari', phoneNumber: '9876543213', khataBalance: 0, trustScore: 78 },
+            { name: 'Vikram Singh', phoneNumber: '9876543214', khataBalance: 5000, trustScore: 45 }
+        ];
+
+        const results = [];
+
+        for (const data of dummyCustomers) {
+            // 1. Find or Create Global Customer
+            let customer = await Customer.findOne({ phoneNumber: data.phoneNumber });
+            if (!customer) {
+                customer = new Customer({
+                    name: data.name,
+                    phoneNumber: data.phoneNumber,
+                    trustScore: data.trustScore
+                });
+                await customer.save();
+            }
+
+            // 2. Create Shop-Specific Account
+            await CustomerAccount.findOneAndDelete({
+                customerId: customer._id,
+                shopkeeperId: req.auth?.userId
+            });
+
+            const account = new CustomerAccount({
+                customerId: customer._id,
+                shopkeeperId: req.auth?.userId,
+                balance: data.khataBalance
+            });
+            await account.save();
+
+            results.push({ ...customer.toObject(), khataBalance: account.balance });
+        }
+
+        res.status(201).json(results);
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 export { router as customerRouter };

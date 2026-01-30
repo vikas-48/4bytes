@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { billApi } from '../../services/api';
 import { Receipt, Calendar, User, Tag } from 'lucide-react';
+import type { Transaction } from '../../db/db';
 
 export const LedgerPage: React.FC = () => {
-    const [bills, setBills] = useState<any[]>([]);
+    const [bills, setBills] = useState<Transaction[]>([]);
     const [filterMode, setFilterMode] = useState<'ALL' | 'cash' | 'online' | 'ledger'>('ALL');
 
     useEffect(() => {
@@ -35,7 +36,7 @@ export const LedgerPage: React.FC = () => {
         .filter(e => e.paymentType !== 'ledger')
         .reduce((sum, e) => sum + e.totalAmount, 0);
 
-    const formatDate = (dateString: string) => {
+    const formatDate = (dateString: string | number) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-IN', {
             day: '2-digit',
@@ -112,29 +113,44 @@ export const LedgerPage: React.FC = () => {
                         <div className="p-10 text-center text-gray-400 font-medium">No transactions found for this filter</div>
                     ) : (
                         filteredEntries.map((bill) => (
-                            <div key={bill._id} className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm border ${getStatusStyles(bill.paymentType)}`}>
-                                        {bill.paymentType === 'cash' ? '💵' : '📱'}
+                            <div key={bill._id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex flex-col gap-4">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm border ${getStatusStyles(bill.paymentType)}`}>
+                                            {bill.paymentType === 'cash' ? '💵' : '📱'}
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-black text-gray-900 dark:text-white">₹{bill.totalAmount}</div>
+                                            <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">
+                                                <Calendar size={12} /> {formatDate(bill.createdAt)}
+                                                <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                                                {bill.paymentType}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="text-2xl font-black text-gray-900 dark:text-white">₹{bill.totalAmount}</div>
-                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">
-                                            <Calendar size={12} /> {formatDate(bill.createdAt)}
-                                            <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                                            {bill.paymentType}
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className="text-[10px] text-gray-400 font-medium">
+                                            ID: {bill._id.slice(-8).toUpperCase()}
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex flex-col items-end gap-1">
+
+                                <div className="w-full pt-4 border-t border-gray-100 dark:border-gray-700">
                                     {bill.customerId && (
-                                        <div className="flex items-center gap-2 text-xs font-bold text-gray-600 dark:text-gray-300">
-                                            <User size={14} className="opacity-50" />
-                                            +91 {bill.customerId.phoneNumber}
+                                        <div className="mb-3 bg-gray-50 dark:bg-gray-800 p-2 px-3 rounded-xl flex items-center gap-2 w-fit">
+                                            <User size={14} className="text-gray-400" />
+                                            <div className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                                +91 {bill.customerId.phoneNumber}
+                                            </div>
                                         </div>
                                     )}
-                                    <div className="text-[10px] text-gray-400 font-medium">
-                                        ID: {bill._id.slice(-8).toUpperCase()}
+                                    <div className="flex flex-wrap gap-2">
+                                        {bill.items?.map((item, idx) => (
+                                            <div key={idx} className="bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                                                <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{item.name}</span>
+                                                <span className="text-[10px] font-black text-gray-400">×{item.quantity}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>

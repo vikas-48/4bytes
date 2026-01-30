@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { customerApi } from '../../services/api';
 import { Plus, User, Phone, X, Save } from 'lucide-react';
+import type { Customer } from '../../services/api';
 
 export const KhataPage: React.FC = () => {
-    const [customers, setCustomers] = useState<any[]>([]);
+    const [customers, setCustomers] = useState<Customer[]>([]);
     const [isAdding, setIsAdding] = useState(false);
     const [newCustomer, setNewCustomer] = useState({ name: '', phoneNumber: '' });
 
@@ -84,7 +85,7 @@ export const KhataPage: React.FC = () => {
                                 </div>
                                 <div className="text-right">
                                     <div className="text-sm text-gray-500 mb-1">Dues</div>
-                                    <div className={`font-black text-lg ${customer.khataBalance > 0 ? 'text-red-500' : 'text-green-600'}`}>₹{customer.khataBalance}</div>
+                                    <div className={`font-black text-lg ${(customer.khataBalance || 0) > 0 ? 'text-red-500' : 'text-green-600'}`}>₹{customer.khataBalance || 0}</div>
                                 </div>
                             </div>
                         ))}

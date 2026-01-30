@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Phone, User, History, AlertCircle } from 'lucide-react';
+import { Plus, Search, Phone, User, Calendar, History, AlertCircle, X, Award, ShieldCheck, TrendingUp, Info, CheckCircle2 } from 'lucide-react';
 import { customerApi, ledgerApi } from '../../services/api';
+import type { Customer } from '../../db/db';
 import { db } from '../../db/db';
 import { getKhataStatus, recalculateKhataScore } from '../../lib/khataLogic';
-import { X, Award, ShieldCheck, TrendingUp, Info, CheckCircle2 } from 'lucide-react';
 
 export const CustomerPage: React.FC = () => {
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', phoneNumber: '' });
@@ -82,6 +82,15 @@ export const CustomerPage: React.FC = () => {
     }
   };
 
+  const formatDate = (dateString?: string | number) => {
+    if (!dateString) return 'No visits yet';
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
   const handleSettleDues = async () => {
     if (!settleModal || settleAmount <= 0) return;
 
@@ -134,7 +143,7 @@ export const CustomerPage: React.FC = () => {
           }
         }
 
-        const newActiveAmount = Math.max(0, customer.activeKhataAmount - settleAmount);
+        const newActiveAmount = Math.max(0, (customer.activeKhataAmount || 0) - settleAmount);
         await db.customers.update(customer.id!, {
           activeKhataAmount: newActiveAmount,
           lastPaymentDate: Date.now()
@@ -240,7 +249,21 @@ export const CustomerPage: React.FC = () => {
         {filteredCustomers.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-700">
             <User size={48} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-gray-500">No customers found</p>
+            <p className="text-gray-500 mb-4">No customers found</p>
+            <button
+              onClick={async () => {
+                try {
+                  await customerApi.seed();
+                  loadCustomers();
+                } catch (e) {
+                  console.error(e);
+                  alert('Failed to seed customers');
+                }
+              }}
+              className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-bold hover:bg-blue-100"
+            >
+              Generate Demo Data
+            </button>
           </div>
         ) : (
           filteredCustomers.map((customer) => {
@@ -295,6 +318,7 @@ export const CustomerPage: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-1 order-1 md:order-3 text-sm text-gray-500 font-bold">
                       <div className="flex items-center gap-2"><History size={14} className="text-primary-green" /><span>Activity Log</span></div>
+                      <div className="flex items-center gap-2"><Calendar size={14} className="text-orange-400" /><span>{formatDate(customer.lastVisit || customer.createdAt)}</span></div>
                       <div className="flex items-center gap-2"><TrendingUp size={14} className="text-orange-400" /><span>Limit: ₹{khataDetails[customer.phoneNumber]?.limit || 3000}</span></div>
                       {customer.khataBalance > 0 && (
                         <button

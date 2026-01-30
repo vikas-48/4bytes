@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+
 async function seed() {
     try {
         await mongoose.connect(process.env.MONGODB_URI!, { family: 4 });
