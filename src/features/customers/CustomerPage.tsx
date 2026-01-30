@@ -143,7 +143,7 @@ export const CustomerPage: React.FC = () => {
           }
         }
 
-        const newActiveAmount = Math.max(0, customer.activeKhataAmount - settleAmount);
+        const newActiveAmount = Math.max(0, (customer.activeKhataAmount || 0) - settleAmount);
         await db.customers.update(customer.id!, {
           activeKhataAmount: newActiveAmount,
           lastPaymentDate: Date.now()

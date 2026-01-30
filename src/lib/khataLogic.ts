@@ -78,7 +78,7 @@ export const recalculateKhataScore = async (customerPhone: string): Promise<numb
     const CS = 1 - (latePayments / ledgerEntries.length);
 
     // 3️⃣ Outstanding Risk Score (ORS) — 20%
-    const currentUnpaid = customer.activeKhataAmount;
+    const currentUnpaid = customer.activeKhataAmount || 0;
     const maxHistorical = customer.maxHistoricalKhataAmount || 1; // avoid div by zero
     let ORS = 1 - (currentUnpaid / maxHistorical);
     ORS = Math.max(0, Math.min(1, ORS));
@@ -129,9 +129,10 @@ export const getKhataStatus = async (customerPhone: string): Promise<KhataExplan
     const reasons: string[] = [];
 
     // Add logic-based reasons
-    if (customer.khataScore < 500) {
+    const score = customer.khataScore || 0;
+    if (score < 500) {
         reasons.push("Score is low due to multiple delayed payments or high outstanding dues.");
-    } else if (customer.khataScore < 700) {
+    } else if (score < 700) {
         reasons.push("Good score, but can improve by paying faster (within 7 days).");
     } else {
         reasons.push("Excellent creditworthiness based on consistent on-time payments.");
@@ -144,9 +145,9 @@ export const getKhataStatus = async (customerPhone: string): Promise<KhataExplan
     }
 
     return {
-        score: customer.khataScore,
-        limit: customer.khataLimit,
-        availableCredit: Math.max(0, customer.khataLimit - customer.activeKhataAmount),
+        score: customer.khataScore || SCORE_DEFAULT,
+        limit: customer.khataLimit || 0,
+        availableCredit: Math.max(0, (customer.khataLimit || 0) - (customer.activeKhataAmount || 0)),
         reasons,
         components: {
             pts: 0, // Mocked for now as we don't store components individually
