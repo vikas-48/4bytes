@@ -15,7 +15,7 @@ export const MainLayout: React.FC = () => {
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
-    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
     const { t } = useLanguage();
 
     const handleLogout = () => {
@@ -32,18 +32,7 @@ export const MainLayout: React.FC = () => {
         document.documentElement.classList.toggle('dark', darkMode);
     }, [darkMode]);
 
-    useEffect(() => {
-        const handleOnline = () => setIsOnline(true);
-        const handleOffline = () => setIsOnline(false);
 
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        };
-    }, []);
 
     const navLinks = [
         { path: '/', label: t.billing, icon: Store },
