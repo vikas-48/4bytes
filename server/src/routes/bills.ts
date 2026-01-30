@@ -3,22 +3,31 @@ import mongoose from 'mongoose';
 import { Bill } from '../models/Bill.js';
 import { Product } from '../models/Product.js';
 import { Customer } from '../models/Customer.js';
+import { CustomerAccount } from '../models/CustomerAccount.js';
 import { LedgerEntry } from '../models/LedgerEntry.js';
+import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Create a new bill with stock check and ledger entry
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        const { customerPhoneNumber, items, paymentType } = req.body;
+        const { customerPhoneNumber, customerName, items, paymentType } = req.body;
 
         // 1. Find or Create Customer
         let customer = await Customer.findOne({ phoneNumber: customerPhoneNumber }).session(session);
         if (!customer) {
-            customer = new Customer({ phoneNumber: customerPhoneNumber });
+            customer = new Customer({
+                phoneNumber: customerPhoneNumber,
+                name: customerName || ''
+            });
+            await customer.save({ session });
+        } else if (customerName && !customer.name) {
+            // Update name if we have it and the existing record doesn't
+            customer.name = customerName;
             await customer.save({ session });
         }
 
@@ -46,6 +55,7 @@ router.post('/', async (req, res) => {
 
         // 3. Create Bill
         const bill = new Bill({
+            shopkeeperId: req.auth?.userId,
             customerId: customer._id,
             items: processedItems,
             totalAmount,
@@ -56,6 +66,7 @@ router.post('/', async (req, res) => {
         // 4. Handle Ledger if applicable
         if (paymentType === 'ledger') {
             const ledgerEntry = new LedgerEntry({
+                shopkeeperId: req.auth?.userId,
                 customerId: customer._id,
                 billId: bill._id,
                 amount: totalAmount,
@@ -64,26 +75,39 @@ router.post('/', async (req, res) => {
             });
             await ledgerEntry.save({ session });
 
-            // Update customer running dues
-            customer.khataBalance += totalAmount;
-            await customer.save({ session });
+            // Update customer running dues (shop-specific)
+            let account = await CustomerAccount.findOne({
+                customerId: customer._id,
+                shopkeeperId: req.auth?.userId
+            }).session(session);
+
+            if (!account) {
+                account = new CustomerAccount({
+                    customerId: customer._id,
+                    shopkeeperId: req.auth?.userId,
+                    balance: totalAmount
+                });
+            } else {
+                account.balance += totalAmount;
+            }
+            await account.save({ session });
         }
 
         await session.commitTransaction();
-        session.endSession();
-
         res.status(201).json(bill);
     } catch (err: any) {
         await session.abortTransaction();
-        session.endSession();
+        console.error('Bill Creation Error:', err.message);
         res.status(400).json({ message: err.message });
+    } finally {
+        session.endSession();
     }
 });
 
 // Get all bills
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
     try {
-        const bills = await Bill.find().populate('customerId').sort({ createdAt: -1 });
+        const bills = await Bill.find({ shopkeeperId: req.auth?.userId }).populate('customerId').sort({ createdAt: -1 });
         res.json(bills);
     } catch (err: any) {
         res.status(500).json({ message: err.message });

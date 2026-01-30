@@ -4,7 +4,11 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { productApi, customerApi, billApi } from '../../services/api';
-import { X, Search, Plus, Minus, Trash2, User, ChevronRight } from 'lucide-react';
+import type { Customer } from '../../services/api';
+import { db } from '../../db/db';
+import type { Customer as LocalCustomer } from '../../db/db';
+import { recalculateKhataScore, SCORE_DEFAULT, calculateKhataLimit, getKhataStatus, type KhataExplanation } from '../../lib/khataLogic';
+import { X, Search, Plus, Minus, Trash2, User, ChevronRight, ShieldAlert, Award } from 'lucide-react';
 
 export const BillingPage: React.FC = () => {
     const [products, setProducts] = useState<any[]>([]);
@@ -12,9 +16,8 @@ export const BillingPage: React.FC = () => {
     const { t } = useLanguage();
     const { addToast } = useToast();
 
-    // @ts-ignore
-    const { isListening, transcript, isSupported, startListening, stopListening } = useSpeechRecognition({
-        onResult: (transcript) => {
+    useSpeechRecognition({
+        onResult: (transcript: string) => {
             setSearchTerm(transcript);
         },
     });
@@ -31,9 +34,14 @@ export const BillingPage: React.FC = () => {
     const [customerInput, setCustomerInput] = useState('');
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [allCustomers, setAllCustomers] = useState<any[]>([]);
-    const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+    const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
+    const [selectedCustomer, setSelectedCustomer] = useState<(Customer & LocalCustomer) | null>(null);
     const [isNewCustomer, setIsNewCustomer] = useState(false);
+    const [khataInfo, setKhataInfo] = useState<KhataExplanation | null>(null);
+
+    // Global Search State
+    const [globalResults, setGlobalResults] = useState<Customer[]>([]);
+    const [isGlobalLoading, setIsGlobalLoading] = useState(false);
 
     useEffect(() => {
         loadProducts();
@@ -48,6 +56,34 @@ export const BillingPage: React.FC = () => {
             console.error('Failed to load customers', err);
         }
     };
+
+    // Effect: Global Search
+    useEffect(() => {
+        const fetchGlobal = async () => {
+            // Reset if input is short
+            if (!customerInput || customerInput.length < 3) {
+                setGlobalResults([]);
+                return;
+            }
+
+            setIsGlobalLoading(true);
+            try {
+                const res = await customerApi.search(customerInput);
+                // Filter out results that are already in the local shop (to avoid duplicates in UI)
+                const localIds = new Set(allCustomers.map(c => c._id));
+                const uniqueGlobal = res.data.filter((c: any) => !localIds.has(c._id));
+                setGlobalResults(uniqueGlobal);
+            } catch (error) {
+                console.error('Global search failed', error);
+                setGlobalResults([]);
+            } finally {
+                setIsGlobalLoading(false);
+            }
+        };
+
+        const timer = setTimeout(fetchGlobal, 400); // 400ms debounce
+        return () => clearTimeout(timer);
+    }, [customerInput, allCustomers]);
 
     const loadProducts = async () => {
         try {
@@ -64,7 +100,7 @@ export const BillingPage: React.FC = () => {
         return 'text-red-600 bg-red-50 border-red-200';
     };
 
-    const identifyCustomer = async (cust?: any) => {
+    const identifyCustomer = async (cust?: Customer) => {
         const phone = cust ? cust.phoneNumber : phoneNumber;
         const name = cust ? cust.name : customerName;
 
@@ -75,11 +111,40 @@ export const BillingPage: React.FC = () => {
 
         try {
             const response = await customerApi.create({ phoneNumber: phone, name });
-            setSelectedCustomer(response.data);
+            const customerData = response.data;
+
+            // Sync with local Dexie DB for Khata Scoring
+            let localCustomer = await db.customers.where('phoneNumber').equals(phone).first();
+            if (!localCustomer) {
+                const newLocalId = await db.customers.add({
+                    phoneNumber: phone,
+                    name: name || customerData.name || 'Unnamed Customer',
+                    khataScore: SCORE_DEFAULT,
+                    khataLimit: calculateKhataLimit(SCORE_DEFAULT),
+                    activeKhataAmount: customerData.khataBalance || 0,
+                    maxHistoricalKhataAmount: customerData.khataBalance || 0,
+                    totalTransactions: 0,
+                    khataTransactions: 0,
+                    latePayments: 0,
+                    createdAt: Date.now()
+                });
+                localCustomer = await db.customers.get(newLocalId);
+            }
+
+            setSelectedCustomer({
+                ...customerData,
+                ...localCustomer,
+                name: customerData.name || localCustomer?.name || 'Unnamed Customer'
+            } as Customer & LocalCustomer);
+
+            // Get detailed Khata status
+            const status = await getKhataStatus(phone);
+            setKhataInfo(status);
+
             setCheckoutStep('PAYMENT');
             addToast(response.status === 201 ? 'New customer created' : 'Customer identified', 'success');
             loadCustomers(); // Refresh list
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
             addToast('Error identifying customer', 'error');
         }
@@ -94,14 +159,61 @@ export const BillingPage: React.FC = () => {
         if (!selectedCustomer) return false;
 
         try {
+            // 1. Server Call
             await billApi.create({
                 customerPhoneNumber: selectedCustomer.phoneNumber,
-                items: cart.map(i => ({ productId: i._id, quantity: i.quantity, price: i.price })),
+                items: cart.map(i => ({ productId: i._id!, quantity: i.quantity, price: i.price })),
                 paymentType: method
             });
 
+            // 2. Local Dexie Sync & Scroring Logic
+            if (method === 'ledger') {
+                const customer = await db.customers.where('phoneNumber').equals(selectedCustomer.phoneNumber).first();
+                if (customer) {
+                    const newActiveAmount = customer.activeKhataAmount + cartTotal;
+                    await db.customers.update(customer.id!, {
+                        activeKhataAmount: newActiveAmount,
+                        maxHistoricalKhataAmount: Math.max(customer.maxHistoricalKhataAmount, newActiveAmount),
+                        khataTransactions: customer.khataTransactions + 1
+                    });
+
+                    // Add to local ledger for score calculation
+                    await db.ledger.add({
+                        customerId: selectedCustomer.phoneNumber,
+                        amount: cartTotal,
+                        paymentMode: 'KHATA',
+                        type: 'debit',
+                        status: 'PENDING',
+                        createdAt: Date.now(),
+                        items: cart
+                    });
+
+                    // Recalculate score
+                    await recalculateKhataScore(selectedCustomer.phoneNumber);
+                }
+            } else {
+                // For cash/online, just record it locally too
+                await db.ledger.add({
+                    customerId: selectedCustomer.phoneNumber,
+                    amount: cartTotal,
+                    paymentMode: method.toUpperCase() as any,
+                    type: 'debit',
+                    status: 'PAID',
+                    createdAt: Date.now(),
+                    paidAt: Date.now(),
+                    items: cart
+                });
+
+                // Consistency check might still benefit from seeing any activity
+                const customer = await db.customers.where('phoneNumber').equals(selectedCustomer.phoneNumber).first();
+                if (customer) {
+                    await db.customers.update(customer.id!, {
+                        totalTransactions: (customer.totalTransactions || 0) + 1
+                    });
+                }
+            }
+
             addToast('Transaction successful!', 'success');
-            // We don't clear/close here yet, we let the animation finish
             loadProducts();
             return true;
         } catch (e: any) {
@@ -138,6 +250,12 @@ export const BillingPage: React.FC = () => {
     };
 
     const handleLedgePayment = async () => {
+        // Enforcement Rule: Check available limit
+        if (khataInfo && cartTotal > khataInfo.availableCredit) {
+            addToast(`Credit Limit Exceeded! Available: ₹${khataInfo.availableCredit}`, 'error');
+            return;
+        }
+
         setAnimationType('ledger');
         setShowStatusModal(true);
         setIsProcessing(true);
@@ -343,6 +461,7 @@ export const BillingPage: React.FC = () => {
 
                                     {/* Quick Suggestions */}
                                     <div className="space-y-2">
+                                        {/* Display Local Matches First */}
                                         {filteredCustomers.map(cust => (
                                             <button
                                                 key={cust._id}
@@ -362,9 +481,38 @@ export const BillingPage: React.FC = () => {
                                             </button>
                                         ))}
 
-                                        {customerInput.length > 0 && filteredCustomers.length === 0 && (
+                                        {/* Display Global Matches */}
+                                        {globalResults.map(cust => (
+                                            <button
+                                                key={cust._id}
+                                                onClick={() => identifyCustomer(cust)}
+                                                className="w-full flex items-center justify-between p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl hover:border-blue-400 hover:shadow-md transition-all group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 uppercase">
+                                                        {cust.name?.[0] || 'C'}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="font-black text-gray-900 dark:text-white">{cust.name || 'Unnamed Customer'}</div>
+                                                            <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full">GLOBAL</span>
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400 font-bold">+91 {cust.phoneNumber}</div>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight className="text-blue-300 group-hover:text-blue-500" />
+                                            </button>
+                                        ))}
+
+                                        {isGlobalLoading && (
+                                            <div className="text-center py-4 text-gray-400 text-sm animate-pulse">
+                                                Searching globally...
+                                            </div>
+                                        )}
+
+                                        {customerInput.length >= 3 && filteredCustomers.length === 0 && globalResults.length === 0 && !isGlobalLoading && (
                                             <div className="text-center py-6 text-gray-400">
-                                                No matches found for "{customerInput}"
+                                                No results found for "{customerInput}"
                                             </div>
                                         )}
                                     </div>
@@ -445,16 +593,66 @@ export const BillingPage: React.FC = () => {
                                 </div>
                             </div>
 
+                            {khataInfo && (
+                                <div className="mb-6 p-4 rounded-2xl bg-gradient-to-br from-primary-green/5 to-primary-green/20 border border-primary-green/20">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <Award className="text-primary-green" size={20} />
+                                            <span className="font-black text-gray-900 dark:text-white uppercase tracking-tighter">Khata Score</span>
+                                        </div>
+                                        <span className={`text-2xl font-black ${khataInfo.score >= 700 ? 'text-green-600' : khataInfo.score >= 500 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                            {khataInfo.score}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500 font-bold">Available Credit:</span>
+                                            <span className="font-black text-gray-900 dark:text-white">₹{khataInfo.availableCredit} / ₹{khataInfo.limit}</span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-primary-green transition-all duration-500"
+                                                style={{ width: `${(khataInfo.score - 300) / 600 * 100}%` }}
+                                            />
+                                        </div>
+                                        {khataInfo.reasons.length > 0 && (
+                                            <p className="text-[10px] text-gray-500 leading-tight italic mt-2">
+                                                💡 {khataInfo.reasons[0]}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             {!paymentMethod ? (
                                 <div className="space-y-4">
                                     <button onClick={() => setPaymentMethod('cash')} className="w-full bg-green-600 text-white p-6 rounded-2xl font-bold text-xl flex items-center gap-4 shadow-lg"><span className="text-2xl">💵</span>CASH</button>
                                     <button onClick={() => setPaymentMethod('online')} className="w-full bg-purple-600 text-white p-6 rounded-2xl font-bold text-xl flex items-center gap-4 shadow-lg"><span className="text-2xl">📱</span>UPI (Online)</button>
-                                    <button onClick={() => setPaymentMethod('ledger')} className="w-full bg-orange-500 text-white p-6 rounded-2xl font-bold text-xl flex items-center gap-4 shadow-lg"><span className="text-2xl">📒</span>LEDGE (Khata)</button>
+                                    <button
+                                        onClick={() => setPaymentMethod('ledger')}
+                                        className="w-full bg-orange-500 text-white p-6 rounded-2xl font-bold text-xl flex items-center gap-4 shadow-lg relative overflow-hidden"
+                                    >
+                                        <span className="text-2xl">📒</span>LEDGE (Khata)
+                                        {khataInfo && cartTotal > khataInfo.availableCredit && (
+                                            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center gap-2">
+                                                <ShieldAlert size={20} />
+                                                <span className="text-xs uppercase font-black">Limit Exceeded</span>
+                                            </div>
+                                        )}
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl border border-gray-100 text-center">
-                                    <div className="text-5xl font-black text-gray-900 dark:text-white mb-8">₹{cartTotal}</div>
-                                    <button onClick={paymentMethod === 'online' ? handleUpiPayment : paymentMethod === 'cash' ? handleCashPayment : handleLedgePayment} className="w-full bg-primary-green text-white p-5 rounded-2xl font-bold text-lg shadow-lg">Confirm {paymentMethod.toUpperCase()}</button>
+                                    <div className="text-5xl font-black text-gray-900 dark:text-white mb-2">₹{cartTotal}</div>
+                                    <div className="text-xs text-gray-400 font-bold uppercase mb-8">Payable via {paymentMethod === 'ledger' ? 'Khata' : paymentMethod}</div>
+
+                                    {paymentMethod === 'ledger' && khataInfo && cartTotal > khataInfo.availableCredit ? (
+                                        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-100 dark:border-red-900/40 mb-4 animate-shake">
+                                            <p className="text-red-600 dark:text-red-400 font-bold text-sm">₹{cartTotal} exceeds your available credit of ₹{khataInfo.availableCredit}</p>
+                                        </div>
+                                    ) : (
+                                        <button onClick={paymentMethod === 'online' ? handleUpiPayment : paymentMethod === 'cash' ? handleCashPayment : handleLedgePayment} className="w-full bg-primary-green text-white p-5 rounded-2xl font-bold text-lg shadow-lg">Confirm {paymentMethod.toUpperCase()}</button>
+                                    )}
                                     <button onClick={() => setPaymentMethod(null)} className="mt-4 text-gray-500 underline">Back</button>
                                 </div>
                             )}

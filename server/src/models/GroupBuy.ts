@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const groupBuySchema = new mongoose.Schema({
+    shopkeeperId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     groupName: { type: String, required: true },
     members: [{ type: String }], // Modified to accept 'shop_me' and Strings
     products: [{

@@ -1,6 +1,8 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { User } from '../models/User.js';
+import { Product } from '../models/Product.js';
+import { starterProducts } from '../utils/starterProducts.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -34,6 +36,13 @@ passport.use(new GoogleStrategy({
                     email: email,
                     avatar: profile.photos?.[0].value
                 });
+
+                // Seed initial products for new Google user
+                const initialProducts = starterProducts.map(p => ({
+                    ...p,
+                    shopkeeperId: user?._id
+                }));
+                await Product.insertMany(initialProducts);
             }
         }
         return done(null, user);

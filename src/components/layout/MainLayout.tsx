@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Outlet, NavLink } from 'react-router-dom';
 import { Store, Users, Package, TrendingUp, CreditCard, ShoppingCart, Menu, X, Moon, Sun, Gift, BookOpen, LogOut, Phone, MessageSquare } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+import { UserProfileModal } from '../UserProfileModal';
+
 export const MainLayout: React.FC = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [showMenu, setShowMenu] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const { t } = useLanguage();
 
     const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = () => {
         logout();
         navigate('/login');
     };
@@ -46,58 +55,33 @@ export const MainLayout: React.FC = () => {
         { path: '/khata', label: t.khata, icon: CreditCard },
         { path: '/inventory', label: t.inventory, icon: ShoppingCart },
         { path: '/payments', label: t.payments, icon: CreditCard },
-        { path: '/ledger', label: 'Ledger', icon: BookOpen },
+        { path: '/records', label: 'Records', icon: BookOpen },
         { path: '/analytics', label: t.analytics, icon: TrendingUp },
     ];
 
     return (
-        <div className={`min-h-screen flex ${darkMode ? 'dark bg-[#0A0A0A] text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
-            {/* Desktop Sidebar */}
-            <aside className={`hidden md:flex flex-col w-64 fixed inset-y-0 z-50 ${darkMode ? 'bg-[#111111] border-white/5' : 'bg-white border-gray-200'} border-r transition-all duration-300`}>
-                <div className="p-6 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary-green rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-green/20">
-                        <Store size={22} />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-black tracking-tighter">GraminLink</h1>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">MSME Ecosystem</p>
-                    </div>
-                </div>
-
-                <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto custom-scrollbar">
-                    {navLinks.map((link) => {
-                        const Icon = link.icon;
-                        return (
-                            <NavLink
-                                key={link.path}
-                                to={link.path}
-                                className={({ isActive }) =>
-                                    `flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${isActive
-                                        ? 'bg-primary-green text-white shadow-lg shadow-primary-green/20 scale-105'
-                                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
-                                    }`
-                                }
-                            >
-                                <Icon size={20} className="group-hover:scale-110 transition-transform" />
-                                <span className="font-bold text-sm text-gray-700 dark:text-gray-200 group-hover:dark:text-white transition-colors">
-                                    {link.label}
-                                </span>
-                            </NavLink>
-                        );
-                    })}
-                </nav>
-
-                <div className="p-4 mt-auto border-t border-gray-100 dark:border-white/5">
-                    <div className="flex items-center gap-3 mb-4 px-2">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary-green to-emerald-400 flex items-center justify-center text-white font-bold">
-                            {user?.name?.[0] || 'K'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-black truncate">{user?.name || 'Owner'}</p>
-                            <div className="flex items-center gap-1">
-                                <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
-                                <span className="text-[10px] text-gray-500 font-bold">{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+        <div className={`h-screen flex flex-col ${darkMode ? 'dark bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+            {/* Header */}
+            <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-primary-green'} text-white p-4 shadow-md z-10 sticky top-0 border-b`}>
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowProfileModal(true)}
+                            className="relative group focus:outline-none"
+                        >
+                            {user?.avatar ? (
+                                <img src={user.avatar} className="w-9 h-9 rounded-full border-2 border-white/30 group-hover:border-white transition-colors object-cover" alt="Profile" />
+                            ) : (
+                                <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center font-bold text-xs uppercase border-2 border-transparent group-hover:border-white/50 transition-all">
+                                    {user?.name?.[0] || 'S'}
+                                </div>
+                            )}
+                            <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 text-primary-green rounded-full p-0.5 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Users size={10} />
                             </div>
+                        </button>
+                        <div>
+                            <h1 className="text-lg font-bold leading-none tracking-tight">GraminLink</h1>
                         </div>
                     </div>
                     <div className="flex gap-2">
@@ -115,7 +99,7 @@ export const MainLayout: React.FC = () => {
                         </button>
                     </div>
                 </div>
-            </aside>
+            </header>
 
             {/* Mobile Header */}
             <div className="flex-1 flex flex-col md:pl-64">
@@ -142,51 +126,115 @@ export const MainLayout: React.FC = () => {
                     </div>
                 </header>
 
-                {/* Mobile Drawer Overlay */}
-                {showMenu && (
-                    <div className="md:hidden fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowMenu(false)}>
-                        <div className={`absolute left-0 top-0 bottom-0 w-80 ${darkMode ? 'bg-[#0A0A0A]' : 'bg-white'} p-6 shadow-2xl animate-in slide-in-from-left duration-300`} onClick={e => e.stopPropagation()}>
-                            <div className="flex justify-between items-center mb-8">
-                                <h2 className="text-xl font-black">Menu</h2>
-                                <button onClick={() => setShowMenu(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 font-bold"><X size={24} /></button>
-                            </div>
-                            <nav className="space-y-2">
-                                {navLinks.map((link) => {
-                                    const Icon = link.icon;
-                                    return (
-                                        <NavLink
-                                            key={link.path}
-                                            to={link.path}
-                                            onClick={() => setShowMenu(false)}
-                                            className={({ isActive }) =>
-                                                `flex items-center gap-4 px-4 py-4 rounded-2xl transition-all ${isActive
-                                                    ? 'bg-primary-green text-white shadow-xl translate-x-2'
-                                                    : 'text-gray-500 hover:bg-gray-50'
-                                                }`
-                                            }
-                                        >
-                                            <Icon size={22} />
-                                            <span className="font-bold">{link.label}</span>
-                                        </NavLink>
-                                    );
-                                })}
-                            </nav>
+                <UserProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
 
-                            <div className="absolute bottom-10 left-6 right-6 p-4 rounded-[2rem] bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-12 h-12 rounded-full bg-primary-green flex items-center justify-center text-white text-xl font-bold">{user?.name?.[0] || 'K'}</div>
-                                    <div>
-                                        <p className="font-black">{user?.name || 'Owner'}</p>
-                                        <p className="text-xs text-gray-500 font-bold">Manage Account</p>
+                {/* Mobile Menu Modal */}
+                <AnimatePresence>
+                    {showMenu && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setShowMenu(false)}
+                                className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: -20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                                transition={{ type: "spring", duration: 0.3 }}
+                                className={`fixed z-50 top-20 right-4 w-64 rounded-2xl shadow-2xl overflow-hidden border ${darkMode
+                                    ? 'bg-gray-800/90 border-gray-700 text-gray-100'
+                                    : 'bg-white/90 border-gray-200 text-gray-900'
+                                    }`}
+                            >
+                                <div className="p-4 border-b border-gray-200/10 flex justify-between items-center">
+                                    <h3 className="font-semibold text-sm uppercase tracking-wider opacity-70">Menu</h3>
+                                    <button
+                                        onClick={() => setShowMenu(false)}
+                                        className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                                <div className="p-2 space-y-1 max-h-[70vh] overflow-y-auto">
+                                    {navLinks.slice(4).map((link) => {
+                                        const Icon = link.icon;
+                                        return (
+                                            <NavLink
+                                                key={link.path}
+                                                to={link.path}
+                                                onClick={() => setShowMenu(false)}
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-3 p-3 rounded-xl transition-all ${isActive
+                                                        ? 'bg-primary-green text-white font-semibold shadow-md'
+                                                        : darkMode
+                                                            ? 'text-gray-300 hover:bg-gray-700/50 hover:pl-4'
+                                                            : 'text-gray-700 hover:bg-gray-100 hover:pl-4'
+                                                    }`
+                                                }
+                                            >
+                                                <Icon size={20} className={link.path === '/deals' ? 'text-purple-500' : ''} />
+                                                <span>{link.label}</span>
+                                            </NavLink>
+                                        );
+                                    })}
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
+
+                {/* Logout Confirmation Modal */}
+                <AnimatePresence>
+                    {showLogoutConfirm && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setShowLogoutConfirm(false)}
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                className={`relative w-full max-w-sm rounded-[2rem] p-8 shadow-2xl overflow-hidden border ${darkMode
+                                    ? 'bg-gray-800 border-gray-700 text-gray-100'
+                                    : 'bg-white border-gray-100 text-gray-900'
+                                    }`}
+                            >
+                                <div className="text-center space-y-4">
+                                    <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto text-red-600">
+                                        <LogOut size={40} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h3 className="text-2xl font-black">Are you sure?</h3>
+                                        <p className="text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+                                            You are about to log out from <span className="font-bold text-gray-900 dark:text-white">GraminLink</span>. You will need to login again to manage your shop.
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col gap-3 pt-4">
+                                        <button
+                                            onClick={confirmLogout}
+                                            className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-red-200 dark:shadow-none transition-all active:scale-[0.98]"
+                                        >
+                                            Yes, Log Out
+                                        </button>
+                                        <button
+                                            onClick={() => setShowLogoutConfirm(false)}
+                                            className="w-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 py-4 rounded-2xl font-bold text-gray-600 dark:text-gray-300 transition-all"
+                                        >
+                                            Cancel
+                                        </button>
                                     </div>
                                 </div>
-                                <button onClick={handleLogout} className="w-full bg-red-500/10 text-red-500 py-3 rounded-xl font-bold flex items-center justify-center gap-2 mt-2">
-                                    <LogOut size={18} /> Logout
-                                </button>
-                            </div>
+                            </motion.div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </AnimatePresence>
 
                 {/* Main Content Area */}
                 <main className="flex-1 overflow-y-auto relative custom-scrollbar">

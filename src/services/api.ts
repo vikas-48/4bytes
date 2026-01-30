@@ -15,34 +15,44 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+export interface Customer {
+    _id: string;
+    phoneNumber: string;
+    name?: string;
+    email?: string;
+    khataBalance?: number;
+    isLocal?: boolean;
+}
+
 export const authApi = {
-    login: (data: any) => api.post('/auth/login', data),
-    register: (data: any) => api.post('/auth/register', data),
+    login: (data: Record<string, unknown>) => api.post('/auth/login', data),
+    register: (data: Record<string, unknown>) => api.post('/auth/register', data),
     getMe: () => api.get('/auth/me'),
 };
 
 export const productApi = {
     getAll: () => api.get('/products'),
-    create: (data: any) => api.post('/products', data),
-    update: (id: string, data: any) => api.patch(`/products/${id}`, data),
+    create: (data: Record<string, unknown>) => api.post('/products', data),
+    update: (id: string, data: Record<string, unknown>) => api.patch(`/products/${id}`, data),
 };
 
 export const customerApi = {
     getAll: () => api.get('/customers'),
     getByPhone: (phone: string) => api.get(`/customers/${phone}`),
+    search: (query: string) => api.get(`/customers/search?q=${query}`),
     create: (data: any) => api.post('/customers', data),
     update: (id: string, data: any) => api.patch(`/customers/${id}`, data),
 };
 
 export const billApi = {
     getAll: () => api.get('/bills'),
-    create: (data: { customerPhoneNumber: string; items: any[]; paymentType: string }) =>
+    create: (data: { customerPhoneNumber: string; items: Array<{ productId: string; quantity: number; price: number }>; paymentType: string }) =>
         api.post('/bills', data),
 };
 
 export const ledgerApi = {
     getCustomerLedger: (customerId: string) => api.get(`/ledger/customer/${customerId}`),
-    recordPayment: (data: { customerId: string; amount: number }) =>
+    recordPayment: (data: { customerId: string; amount: number; paymentMode: string }) =>
         api.post('/ledger/payment', data),
 };
 

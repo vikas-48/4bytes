@@ -46,6 +46,7 @@ function App() {
                   <Route path="ledger" element={<LedgerPage />} />
                   <Route path="whatsapp" element={<WhatsAppPage />} />
                   <Route path="recovery" element={<RecoveryPage />} />
+                  <Route path="records" element={<LedgerPage />} />
                 </Route>
               </Routes>
             </BrowserRouter>
