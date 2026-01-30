@@ -4,8 +4,10 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { productApi, customerApi, billApi } from '../../services/api';
+import type { Customer } from '../../services/api';
 import { db } from '../../db/db';
-import { recalculateKhataScore, SCORE_DEFAULT, calculateKhataLimit, getKhataStatus } from '../../lib/khataLogic';
+import type { Customer as LocalCustomer } from '../../db/db';
+import { recalculateKhataScore, SCORE_DEFAULT, calculateKhataLimit, getKhataStatus, type KhataExplanation } from '../../lib/khataLogic';
 import { X, Search, Plus, Minus, Trash2, User, ChevronRight, ShieldAlert, Award } from 'lucide-react';
 
 export const BillingPage: React.FC = () => {
@@ -14,9 +16,8 @@ export const BillingPage: React.FC = () => {
     const { t } = useLanguage();
     const { addToast } = useToast();
 
-    // @ts-ignore
-    const { isListening, transcript, isSupported, startListening, stopListening } = useSpeechRecognition({
-        onResult: (transcript) => {
+    useSpeechRecognition({
+        onResult: (transcript: string) => {
             setSearchTerm(transcript);
         },
     });
@@ -33,10 +34,14 @@ export const BillingPage: React.FC = () => {
     const [customerInput, setCustomerInput] = useState('');
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [allCustomers, setAllCustomers] = useState<any[]>([]);
-    const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+    const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
+    const [selectedCustomer, setSelectedCustomer] = useState<(Customer & LocalCustomer) | null>(null);
     const [isNewCustomer, setIsNewCustomer] = useState(false);
-    const [khataInfo, setKhataInfo] = useState<any>(null);
+    const [khataInfo, setKhataInfo] = useState<KhataExplanation | null>(null);
+
+    // Global Search State
+    const [globalResults, setGlobalResults] = useState<Customer[]>([]);
+    const [isGlobalLoading, setIsGlobalLoading] = useState(false);
 
     useEffect(() => {
         loadProducts();
@@ -51,6 +56,34 @@ export const BillingPage: React.FC = () => {
             console.error('Failed to load customers', err);
         }
     };
+
+    // Effect: Global Search
+    useEffect(() => {
+        const fetchGlobal = async () => {
+            // Reset if input is short
+            if (!customerInput || customerInput.length < 3) {
+                setGlobalResults([]);
+                return;
+            }
+
+            setIsGlobalLoading(true);
+            try {
+                const res = await customerApi.search(customerInput);
+                // Filter out results that are already in the local shop (to avoid duplicates in UI)
+                const localIds = new Set(allCustomers.map(c => c._id));
+                const uniqueGlobal = res.data.filter((c: any) => !localIds.has(c._id));
+                setGlobalResults(uniqueGlobal);
+            } catch (error) {
+                console.error('Global search failed', error);
+                setGlobalResults([]);
+            } finally {
+                setIsGlobalLoading(false);
+            }
+        };
+
+        const timer = setTimeout(fetchGlobal, 400); // 400ms debounce
+        return () => clearTimeout(timer);
+    }, [customerInput, allCustomers]);
 
     const loadProducts = async () => {
         try {
@@ -67,7 +100,7 @@ export const BillingPage: React.FC = () => {
         return 'text-red-600 bg-red-50 border-red-200';
     };
 
-    const identifyCustomer = async (cust?: any) => {
+    const identifyCustomer = async (cust?: Customer) => {
         const phone = cust ? cust.phoneNumber : phoneNumber;
         const name = cust ? cust.name : customerName;
 
@@ -98,7 +131,11 @@ export const BillingPage: React.FC = () => {
                 localCustomer = await db.customers.get(newLocalId);
             }
 
-            setSelectedCustomer({ ...customerData, ...localCustomer });
+            setSelectedCustomer({
+                ...customerData,
+                ...localCustomer,
+                name: customerData.name || localCustomer?.name || 'Unnamed Customer'
+            } as Customer & LocalCustomer);
 
             // Get detailed Khata status
             const status = await getKhataStatus(phone);
@@ -107,7 +144,7 @@ export const BillingPage: React.FC = () => {
             setCheckoutStep('PAYMENT');
             addToast(response.status === 201 ? 'New customer created' : 'Customer identified', 'success');
             loadCustomers(); // Refresh list
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
             addToast('Error identifying customer', 'error');
         }
@@ -125,7 +162,7 @@ export const BillingPage: React.FC = () => {
             // 1. Server Call
             await billApi.create({
                 customerPhoneNumber: selectedCustomer.phoneNumber,
-                items: cart.map(i => ({ productId: i._id, quantity: i.quantity, price: i.price })),
+                items: cart.map(i => ({ productId: i._id!, quantity: i.quantity, price: i.price })),
                 paymentType: method
             });
 
@@ -424,6 +461,7 @@ export const BillingPage: React.FC = () => {
 
                                     {/* Quick Suggestions */}
                                     <div className="space-y-2">
+                                        {/* Display Local Matches First */}
                                         {filteredCustomers.map(cust => (
                                             <button
                                                 key={cust._id}
@@ -443,9 +481,38 @@ export const BillingPage: React.FC = () => {
                                             </button>
                                         ))}
 
-                                        {customerInput.length > 0 && filteredCustomers.length === 0 && (
+                                        {/* Display Global Matches */}
+                                        {globalResults.map(cust => (
+                                            <button
+                                                key={cust._id}
+                                                onClick={() => identifyCustomer(cust)}
+                                                className="w-full flex items-center justify-between p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl hover:border-blue-400 hover:shadow-md transition-all group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 uppercase">
+                                                        {cust.name?.[0] || 'C'}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="font-black text-gray-900 dark:text-white">{cust.name || 'Unnamed Customer'}</div>
+                                                            <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full">GLOBAL</span>
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400 font-bold">+91 {cust.phoneNumber}</div>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight className="text-blue-300 group-hover:text-blue-500" />
+                                            </button>
+                                        ))}
+
+                                        {isGlobalLoading && (
+                                            <div className="text-center py-4 text-gray-400 text-sm animate-pulse">
+                                                Searching globally...
+                                            </div>
+                                        )}
+
+                                        {customerInput.length >= 3 && filteredCustomers.length === 0 && globalResults.length === 0 && !isGlobalLoading && (
                                             <div className="text-center py-6 text-gray-400">
-                                                No matches found for "{customerInput}"
+                                                No results found for "{customerInput}"
                                             </div>
                                         )}
                                     </div>

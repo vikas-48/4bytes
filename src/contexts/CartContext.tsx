@@ -16,10 +16,35 @@ interface CartContextType {
     cartTotal: number;
 }
 
+import { useAuth } from './AuthContext';
+
+// ... (keep interface CartContextType)
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [cart, setCart] = useState<CartItem[]>([]);
+const CartController: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+
+    // Initialize cart from local storage based on user ID
+    const [cart, setCart] = useState<CartItem[]>(() => {
+        if (user?.id) {
+            try {
+                const saved = localStorage.getItem(`cart_${user.id}`);
+                return saved ? JSON.parse(saved) : [];
+            } catch (error) {
+                console.error('Failed to parse cart from storage:', error);
+                return [];
+            }
+        }
+        return [];
+    });
+
+    // Save cart to local storage whenever it changes
+    React.useEffect(() => {
+        if (user?.id) {
+            localStorage.setItem(`cart_${user.id}`, JSON.stringify(cart));
+        }
+    }, [cart, user?.id]);
 
     const addToCart = (product: Product, currentStock: number) => {
         let success = true;
@@ -89,6 +114,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             {children}
         </CartContext.Provider>
     );
+};
+
+export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    // Using key forces re-mount and state re-initialization when user changes
+    return <CartController key={user?.id || 'guest'}>{children}</CartController>;
 };
 
 export const useCart = () => {

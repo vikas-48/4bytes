@@ -15,12 +15,19 @@ router.post('/', auth, async (req, res) => {
     session.startTransaction();
 
     try {
-        const { customerPhoneNumber, items, paymentType } = req.body;
+        const { customerPhoneNumber, customerName, items, paymentType } = req.body;
 
         // 1. Find or Create Customer
         let customer = await Customer.findOne({ phoneNumber: customerPhoneNumber }).session(session);
         if (!customer) {
-            customer = new Customer({ phoneNumber: customerPhoneNumber });
+            customer = new Customer({
+                phoneNumber: customerPhoneNumber,
+                name: customerName || ''
+            });
+            await customer.save({ session });
+        } else if (customerName && !customer.name) {
+            // Update name if we have it and the existing record doesn't
+            customer.name = customerName;
             await customer.save({ session });
         }
 

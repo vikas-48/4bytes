@@ -13,11 +13,16 @@ export const MainLayout: React.FC = () => {
     const navigate = useNavigate();
     const [showMenu, setShowMenu] = useState(false);
     const [showProfileModal, setShowProfileModal] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const { t } = useLanguage();
 
     const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = () => {
         logout();
         navigate('/login');
     };
@@ -166,6 +171,56 @@ export const MainLayout: React.FC = () => {
                             </div>
                         </motion.div>
                     </>
+                )}
+            </AnimatePresence>
+
+            {/* Logout Confirmation Modal */}
+            <AnimatePresence>
+                {showLogoutConfirm && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowLogoutConfirm(false)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className={`relative w-full max-w-sm rounded-[2rem] p-8 shadow-2xl overflow-hidden border ${darkMode
+                                ? 'bg-gray-800 border-gray-700 text-gray-100'
+                                : 'bg-white border-gray-100 text-gray-900'
+                                }`}
+                        >
+                            <div className="text-center space-y-4">
+                                <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto text-red-600">
+                                    <LogOut size={40} />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-black">Are you sure?</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+                                        You are about to log out from <span className="font-bold text-gray-900 dark:text-white">KiranaLink</span>. You will need to login again to manage your shop.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-3 pt-4">
+                                    <button
+                                        onClick={confirmLogout}
+                                        className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-red-200 dark:shadow-none transition-all active:scale-[0.98]"
+                                    >
+                                        Yes, Log Out
+                                    </button>
+                                    <button
+                                        onClick={() => setShowLogoutConfirm(false)}
+                                        className="w-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 py-4 rounded-2xl font-bold text-gray-600 dark:text-gray-300 transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 
