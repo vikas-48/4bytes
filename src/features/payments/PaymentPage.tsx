@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, AlertCircle } from 'lucide-react';
 import { ledgerApi, customerApi } from '../../services/api';
-<<<<<<< HEAD
-import type { Customer } from '../../db/db';
-=======
 import type { Customer } from '../../services/api';
->>>>>>> origin/main
 
 export const PaymentPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);

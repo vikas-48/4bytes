@@ -15,23 +15,33 @@ export interface Product {
 }
 
 export interface Customer {
-  id?: number;
   _id?: string;
-<<<<<<< HEAD
-  id?: number; // legacy
+  id?: number;
   name?: string;
-  phoneNumber: string; // updated from phone
+  phoneNumber: string;
   khataBalance: number;
+
+  // AI Agent & Recovery Fields (HEAD)
   totalTransactions?: number;
   trustScore?: number;
   visitValidation?: number;
   lastVisit?: string | number;
   loyaltyPoints?: number;
   totalPurchases?: number;
-  createdAt?: string | number;
   nextCallDate?: number;
   recoveryStatus?: 'Promised' | 'Call Again' | 'Busy' | 'Failed';
   recoveryNotes?: string;
+
+  // Khata Logic Fields (Main)
+  khataScore?: number;
+  khataLimit?: number;
+  activeKhataAmount?: number;
+  maxHistoricalKhataAmount?: number;
+  lastScoreUpdate?: number;
+  khataTransactions?: number;
+  latePayments?: number;
+  lastPaymentDate?: number;
+  createdAt?: number | string;
 }
 
 export interface Transaction {
@@ -57,20 +67,6 @@ export interface Deal {
   products: { productId: string | null; quantity: number }[];
   totalAmount: number;
   status: string;
-=======
-  name: string;
-  phoneNumber: string;
-  khataScore: number;
-  khataLimit: number;
-  activeKhataAmount: number;
-  maxHistoricalKhataAmount: number;
-  lastScoreUpdate?: number;
-  totalTransactions: number;
-  khataTransactions: number;
-  latePayments: number;
-  lastPaymentDate?: number;
-  createdAt: number;
->>>>>>> origin/main
 }
 
 export interface LedgerEntry {
