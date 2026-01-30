@@ -39,6 +39,11 @@ export const BillingPage: React.FC = () => {
     const [isNewCustomer, setIsNewCustomer] = useState(false);
     const [khataInfo, setKhataInfo] = useState<KhataExplanation | null>(null);
 
+    // OTP State
+    const [khataOtp, setKhataOtp] = useState('');
+    const [showOtpInput, setShowOtpInput] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
+
     // Global Search State
     const [globalResults, setGlobalResults] = useState<Customer[]>([]);
     const [isGlobalLoading, setIsGlobalLoading] = useState(false);
@@ -156,7 +161,7 @@ export const BillingPage: React.FC = () => {
             c.phoneNumber.includes(customerInput)) && customerInput.length > 0
     );
 
-    const processTransaction = async (method: 'cash' | 'online' | 'ledger') => {
+    const processTransaction = async (method: 'cash' | 'online' | 'ledger', otp?: string) => {
         if (!selectedCustomer) return false;
 
         try {
@@ -164,7 +169,8 @@ export const BillingPage: React.FC = () => {
             await billApi.create({
                 customerPhoneNumber: selectedCustomer.phoneNumber,
                 items: cart.map(i => ({ productId: i._id!, quantity: i.quantity, price: i.price })),
-                paymentType: method
+                paymentType: method,
+                otp: otp
             });
 
             // 2. Local Dexie Sync & Scroring Logic
@@ -257,11 +263,35 @@ export const BillingPage: React.FC = () => {
             return;
         }
 
+        // If OTP input is not shown, request OTP first
+        if (!showOtpInput) {
+            setOtpLoading(true);
+            try {
+                await billApi.requestKhataOtp({
+                    phoneNumber: selectedCustomer!.phoneNumber,
+                    amount: cartTotal
+                });
+                setShowOtpInput(true);
+                addToast('OTP sent to customer mobile', 'success');
+            } catch (err: any) {
+                addToast(err.response?.data?.message || 'Failed to send OTP', 'error');
+            } finally {
+                setOtpLoading(false);
+            }
+            return;
+        }
+
+        // Validate OTP input
+        if (khataOtp.length < 6) {
+            addToast('Enter 6-digit code', 'warning');
+            return;
+        }
+
         setAnimationType('ledger');
         setShowStatusModal(true);
         setIsProcessing(true);
 
-        const success = await processTransaction('ledger');
+        const success = await processTransaction('ledger', khataOtp);
         if (success) {
             setIsProcessing(false);
             // No auto-close, wait for user to click OK
@@ -286,6 +316,8 @@ export const BillingPage: React.FC = () => {
         setIsNewCustomer(false);
         setSelectedCustomer(null);
         setAnimationType(null);
+        setShowOtpInput(false);
+        setKhataOtp('');
     };
 
     return (
@@ -652,9 +684,33 @@ export const BillingPage: React.FC = () => {
                                             <p className="text-red-600 dark:text-red-400 font-bold text-sm">₹{cartTotal} exceeds your available credit of ₹{khataInfo.availableCredit}</p>
                                         </div>
                                     ) : (
-                                        <button onClick={paymentMethod === 'online' ? handleUpiPayment : paymentMethod === 'cash' ? handleCashPayment : handleLedgePayment} className="w-full bg-primary-green text-white p-5 rounded-2xl font-bold text-lg shadow-lg">Confirm {paymentMethod.toUpperCase()}</button>
+                                        <div className="space-y-4">
+                                            {paymentMethod === 'ledger' && showOtpInput && (
+                                                <div className="space-y-3 animate-in fade-in zoom-in duration-300">
+                                                    <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-2xl border border-orange-100 dark:border-orange-900/30 text-left">
+                                                        <p className="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-1">Verify Consent</p>
+                                                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-medium">OTP sent to <span className="text-gray-900 dark:text-white font-bold">+91 {selectedCustomer?.phoneNumber}</span>. Valid for 60 seconds.</p>
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="------"
+                                                        maxLength={6}
+                                                        value={khataOtp}
+                                                        onChange={(e) => setKhataOtp(e.target.value.replace(/\D/g, ''))}
+                                                        className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 py-4 rounded-2xl text-3xl font-black text-center tracking-[0.4em] outline-none focus:border-orange-500 transition-all placeholder:opacity-20"
+                                                    />
+                                                </div>
+                                            )}
+                                            <button
+                                                onClick={paymentMethod === 'online' ? handleUpiPayment : paymentMethod === 'cash' ? handleCashPayment : handleLedgePayment}
+                                                disabled={otpLoading || (paymentMethod === 'ledger' && showOtpInput && khataOtp.length < 6)}
+                                                className={`w-full py-5 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${otpLoading ? 'bg-gray-300' : 'bg-primary-green text-white hover:brightness-105 active:scale-[0.98]'}`}
+                                            >
+                                                {otpLoading ? 'Requesting...' : (paymentMethod === 'ledger' && !showOtpInput) ? 'Verify with OTP' : `Confirm ${paymentMethod?.toUpperCase()}`}
+                                            </button>
+                                        </div>
                                     )}
-                                    <button onClick={() => setPaymentMethod(null)} className="mt-4 text-gray-500 underline">Back</button>
+                                    <button onClick={() => { setPaymentMethod(null); setShowOtpInput(false); setKhataOtp(''); }} className="mt-4 text-gray-500 underline text-sm font-bold opacity-60 hover:opacity-100 transition-opacity uppercase tracking-widest">Back</button>
                                 </div>
                             )}
                         </div>

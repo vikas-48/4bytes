@@ -48,7 +48,8 @@ export const customerApi = {
 
 export const billApi = {
     getAll: () => api.get('/bills'),
-    create: (data: { customerPhoneNumber: string; items: Array<{ productId: string; quantity: number; price: number }>; paymentType: string }) =>
+    requestKhataOtp: (data: { phoneNumber: string; amount: number }) => api.post('/bills/request-khata-otp', data),
+    create: (data: { customerPhoneNumber: string; items: Array<{ productId: string; quantity: number; price: number }>; paymentType: string; otp?: string }) =>
         api.post('/bills', data),
 };
 
