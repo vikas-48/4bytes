@@ -38,7 +38,7 @@ export const MainLayout: React.FC = () => {
 
     const navLinks = [
         { path: '/', label: t.billing, icon: Store },
-        { path: '/deals', label: 'Group Buy 🔥', icon: Gift },
+        { path: '/deals', label: 'Group Buy', icon: Gift },
         { path: '/customers', label: t.customers, icon: Users },
         { path: '/whatsapp', label: 'ShopOS WA 🟢', icon: MessageSquare },
         { path: '/recovery', label: 'AI Agent 🤖', icon: Phone },

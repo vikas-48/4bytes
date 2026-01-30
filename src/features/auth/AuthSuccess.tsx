@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -9,17 +9,20 @@ export default function AuthSuccess() {
     const { login } = useAuth();
     const { addToast } = useToast();
 
+    const loginTriggered = useRef(false);
+
     useEffect(() => {
         const token = searchParams.get('token');
-        if (token) {
+        if (token && !loginTriggered.current) {
+            loginTriggered.current = true;
             // We set a temporary loading user, the AuthProvider will fetch the real one via getMe
             login(token, { id: 'temp', name: 'User', email: 'user@example.com' });
             addToast("Google Login Successful!", "success");
-            navigate('/');
-        } else {
-            navigate('/login');
+            navigate('/', { replace: true });
+        } else if (!token) {
+            navigate('/login', { replace: true });
         }
-    }, [searchParams]);
+    }, [searchParams, login, addToast, navigate]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">

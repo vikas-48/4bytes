@@ -89,7 +89,6 @@ const GroupBuyCard = ({ deal, customerId = 'shop_me', onShowPass }: { deal: any,
             qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=ORDER_${deal._id}_user_${customerId}_valid`
         };
     };
-
     const handleJoin = async () => {
         setIsProcessing(true);
         try {
@@ -170,11 +169,11 @@ const GroupBuyCard = ({ deal, customerId = 'shop_me', onShowPass }: { deal: any,
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </div>
-                </div>
+                    </div >
+                </div >
 
                 {/* Right: Details */}
-                <div className="md:w-2/3 flex flex-col justify-between">
+                < div className="md:w-2/3 flex flex-col justify-between" >
                     <div>
                         <div className="flex justify-between items-start">
                             <h2 className="text-2xl font-black text-gray-800 dark:text-white leading-tight mb-1">{productname}</h2>
@@ -295,9 +294,9 @@ const GroupBuyCard = ({ deal, customerId = 'shop_me', onShowPass }: { deal: any,
                             Invite Neighbors
                         </button>
                     </div>
-                </div>
-            </div>
-        </motion.div>
+                </div >
+            </div >
+        </motion.div >
     );
 };
 

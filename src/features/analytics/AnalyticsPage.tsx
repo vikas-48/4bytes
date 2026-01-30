@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, User } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { billApi } from '../../services/api';
 
 export const AnalyticsPage: React.FC = () => {
@@ -47,7 +47,7 @@ export const AnalyticsPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-gray-800">Cloud Analytics (Atlas)</h2>
+      <h2 className="text-2xl font-bold text-gray-900">Performance Metrics</h2>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-white p-4 rounded-lg shadow-sm">
@@ -74,7 +74,7 @@ export const AnalyticsPage: React.FC = () => {
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm">
-        <h3 className="font-semibold text-gray-800 mb-3">Sync Stream (Realtime)</h3>
+        <h3 className="font-semibold text-gray-800 mb-3">Recent Transactions</h3>
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {bills.slice().reverse().map((b: any) => (
             <div key={b._id} className="text-xs border-b pb-2 flex justify-between">

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { customerApi } from '../../services/api';
 import { Plus, User, Phone, X, Save } from 'lucide-react';
+<<<<<<< HEAD
 import type { Customer } from '../../db/db';
+=======
+>>>>>>> origin/main
 
 export const KhataPage: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
@@ -36,9 +39,9 @@ export const KhataPage: React.FC = () => {
     return (
         <div className="p-4 safe-area-bottom">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Cloud Khata</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Khata Ledger</h2>
                 <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                    {customers.length} Accounts (Atlas)
+                    {customers.length} Accounts Active
                 </span>
             </div>
 
@@ -64,14 +67,14 @@ export const KhataPage: React.FC = () => {
                             onChange={e => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
                         />
                         <button onClick={handleAddCustomer} className="w-full bg-orange-500 text-white p-4 rounded-xl font-bold">
-                            <Save size={20} /> Save to Cloud
+                            <Save size={20} /> Register Account
                         </button>
                     </div>
                 </div>
             ) : (
                 <>
                     <button onClick={() => setIsAdding(true)} className="w-full bg-white border-2 border-dashed border-orange-400 text-orange-500 p-4 rounded-xl font-bold transition-colors mb-6">
-                        <Plus size={24} /> New Cloud Account
+                        <Plus size={24} /> Create New Account
                     </button>
                     <div className="space-y-3 pb-20">
                         {customers.map(customer => (

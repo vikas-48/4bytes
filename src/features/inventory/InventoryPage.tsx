@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { productApi } from '../../services/api';
 import { Plus, X, Save } from 'lucide-react';
+<<<<<<< HEAD
 import type { Product } from '../../db/db';
+=======
+>>>>>>> origin/main
 
 export const InventoryPage: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
@@ -43,9 +46,9 @@ export const InventoryPage: React.FC = () => {
     return (
         <div className="p-4 safe-area-bottom">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Cloud Inventory</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Inventory Status</h2>
                 <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                    {products.length} Items (Atlas)
+                    {products.length} Items Listed
                 </span>
             </div>
 
@@ -81,14 +84,14 @@ export const InventoryPage: React.FC = () => {
                             />
                         </div>
                         <button onClick={handleAddProduct} className="w-full bg-primary-green text-white p-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg">
-                            <Save size={20} /> Save to Cloud
+                            <Save size={20} /> Save Product
                         </button>
                     </div>
                 </div>
             ) : (
                 <>
                     <button onClick={() => setIsAdding(true)} className="w-full bg-white border-2 border-dashed border-primary-green text-primary-green p-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 mb-6 transition-colors">
-                        <Plus size={24} /> New Cloud Item
+                        <Plus size={24} /> Add New Product
                     </button>
                     <div className="space-y-3 pb-20">
                         {products.map(product => (
@@ -97,7 +100,7 @@ export const InventoryPage: React.FC = () => {
                                     <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">{product.icon || '📦'}</div>
                                     <div>
                                         <h4 className="font-bold text-gray-800">{product.name}</h4>
-                                        <p className="text-xs text-gray-500">Cloud Stock: {product.stock}</p>
+                                        <p className="text-xs text-gray-500">Available Stock: {product.stock}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">

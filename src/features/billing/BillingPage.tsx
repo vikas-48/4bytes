@@ -4,11 +4,11 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { productApi, customerApi, billApi } from '../../services/api';
-import { IndianRupee, X, Search, Mic, MicOff, Plus, Minus, Trash2, Phone, User, ChevronRight } from 'lucide-react';
+import { X, Search, Plus, Minus, Trash2, User, ChevronRight } from 'lucide-react';
 
 export const BillingPage: React.FC = () => {
     const [products, setProducts] = useState<any[]>([]);
-    const { cart, addToCart, increaseQuantity, decreaseQuantity, clearCart, cartTotal } = useCart();
+    const { cart, addToCart, increaseQuantity, decreaseQuantity, updateQuantity, removeFromCart, clearCart, cartTotal } = useCart();
     const { t } = useLanguage();
     const { addToast } = useToast();
 
@@ -23,16 +23,31 @@ export const BillingPage: React.FC = () => {
     const [checkoutStep, setCheckoutStep] = useState<'SUMMARY' | 'CUSTOMER' | 'PAYMENT'>('SUMMARY');
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online' | 'ledger' | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [showUpiModal, setShowUpiModal] = useState(false);
-    const [upiProcessing, setUpiProcessing] = useState(false);
+    const [showStatusModal, setShowStatusModal] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [animationType, setAnimationType] = useState<'cash' | 'online' | 'ledger' | null>(null);
 
     // Customer identification states
+    const [customerInput, setCustomerInput] = useState('');
+    const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [allCustomers, setAllCustomers] = useState<any[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+    const [isNewCustomer, setIsNewCustomer] = useState(false);
 
     useEffect(() => {
         loadProducts();
+        loadCustomers();
     }, []);
+
+    const loadCustomers = async () => {
+        try {
+            const response = await customerApi.getAll();
+            setAllCustomers(response.data);
+        } catch (err) {
+            console.error('Failed to load customers', err);
+        }
+    };
 
     const loadProducts = async () => {
         try {
@@ -49,70 +64,109 @@ export const BillingPage: React.FC = () => {
         return 'text-red-600 bg-red-50 border-red-200';
     };
 
-    const identifyCustomer = async () => {
-        if (phoneNumber.length !== 10 || !/^\d+$/.test(phoneNumber)) {
+    const identifyCustomer = async (cust?: any) => {
+        const phone = cust ? cust.phoneNumber : phoneNumber;
+        const name = cust ? cust.name : customerName;
+
+        if (phone.length !== 10 || !/^\d+$/.test(phone)) {
             addToast('Enter valid 10-digit phone number', 'error');
             return;
         }
 
         try {
-            const response = await customerApi.create({ phoneNumber });
+            const response = await customerApi.create({ phoneNumber: phone, name });
             setSelectedCustomer(response.data);
             setCheckoutStep('PAYMENT');
             addToast(response.status === 201 ? 'New customer created' : 'Customer identified', 'success');
+            loadCustomers(); // Refresh list
         } catch (e) {
             console.error(e);
             addToast('Error identifying customer', 'error');
         }
     };
 
+    const filteredCustomers = allCustomers.filter(c =>
+        (c.name?.toLowerCase().includes(customerInput.toLowerCase()) ||
+            c.phoneNumber.includes(customerInput)) && customerInput.length > 0
+    );
+
     const processTransaction = async (method: 'cash' | 'online' | 'ledger') => {
-        if (!selectedCustomer) return;
+        if (!selectedCustomer) return false;
 
         try {
-            const response = await billApi.create({
+            await billApi.create({
                 customerPhoneNumber: selectedCustomer.phoneNumber,
                 items: cart.map(i => ({ productId: i._id, quantity: i.quantity, price: i.price })),
                 paymentType: method
             });
 
             addToast('Transaction successful!', 'success');
-            clearCart();
-            closeCheckout();
-
-            // Reload products to get updated stock
+            // We don't clear/close here yet, we let the animation finish
             loadProducts();
+            return true;
         } catch (e: any) {
             console.error(e);
             addToast(e.response?.data?.message || 'Transaction Failed', 'error');
+            return false;
         }
     };
 
-    const handleCashPayment = () => processTransaction('cash');
+    const handleCashPayment = async () => {
+        setAnimationType('cash');
+        setShowStatusModal(true);
+        setIsProcessing(true);
 
-    const handleUpiPayment = () => {
-        setShowUpiModal(true);
-        setUpiProcessing(true);
-
-        // Simulate UPI payment delay
-        setTimeout(async () => {
-            await processTransaction('online');
-            setUpiProcessing(false);
-            setTimeout(() => {
-                setShowUpiModal(false);
-            }, 1000);
-        }, 2000);
+        const success = await processTransaction('cash');
+        if (success) {
+            setIsProcessing(false);
+        } else {
+            setShowStatusModal(false);
+        }
     };
 
-    const handleLedgePayment = () => processTransaction('ledger');
+    const handleUpiPayment = async () => {
+        setAnimationType('online');
+        setShowStatusModal(true);
+        setIsProcessing(true);
+
+        const success = await processTransaction('online');
+        if (success) {
+            setIsProcessing(false);
+        } else {
+            setShowStatusModal(false);
+        }
+    };
+
+    const handleLedgePayment = async () => {
+        setAnimationType('ledger');
+        setShowStatusModal(true);
+        setIsProcessing(true);
+
+        const success = await processTransaction('ledger');
+        if (success) {
+            setIsProcessing(false);
+            // No auto-close, wait for user to click OK
+        } else {
+            setShowStatusModal(false);
+        }
+    };
+
+    const handleTransactionComplete = () => {
+        clearCart();
+        closeCheckout();
+    };
 
     const closeCheckout = () => {
         setShowCheckout(false);
         setCheckoutStep('SUMMARY');
         setPaymentMethod(null);
-        setShowUpiModal(false);
+        setShowStatusModal(false);
         setPhoneNumber('');
+        setCustomerName('');
+        setCustomerInput('');
+        setIsNewCustomer(false);
         setSelectedCustomer(null);
+        setAnimationType(null);
     };
 
     return (
@@ -140,23 +194,37 @@ export const BillingPage: React.FC = () => {
                     {products?.filter(p =>
                         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         p.category.toLowerCase().includes(searchTerm.toLowerCase())
-                    ).map(product => (
-                        <button
-                            key={product._id}
-                            onClick={() => {
-                                addToCart(product);
-                                addToast(`${product.name} added to cart`, 'success');
-                            }}
-                            className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center aspect-square active:scale-95 transition-transform hover:shadow-md"
-                        >
-                            <div className="text-4xl mb-2">{product.icon || '📦'}</div>
-                            <span className="font-bold text-gray-900 dark:text-gray-100 leading-tight block w-full text-center truncate">{product.name}</span>
-                            <span className="text-primary-green font-bold text-sm mt-1">₹{product.price}/{product.unit}</span>
-                            {product.stock <= product.minStock && (
-                                <span className="text-xs text-danger-red font-semibold mt-1">Low Stock</span>
-                            )}
-                        </button>
-                    ))}
+                    ).map(product => {
+                        const isOutOfStock = product.stock <= 0;
+                        return (
+                            <button
+                                key={product._id}
+                                disabled={isOutOfStock}
+                                onClick={() => {
+                                    const success = addToCart(product, product.stock);
+                                    if (!success) addToast(`Only ${product.stock} ${product.unit} available`, 'warning');
+                                }}
+                                className={`bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center aspect-square transition-all relative overflow-hidden ${isOutOfStock ? 'opacity-40 grayscale-[0.5] cursor-not-allowed' : 'active:scale-95 hover:shadow-md'}`}
+                            >
+                                {isOutOfStock && (
+                                    <div className="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                                        Sold Out
+                                    </div>
+                                )}
+                                <div className="text-4xl mb-2">{product.icon || '📦'}</div>
+                                <span className="font-bold text-gray-900 dark:text-gray-100 leading-tight block w-full text-center truncate">{product.name}</span>
+                                <span className="text-primary-green font-bold text-sm mt-1">₹{product.price}/{product.unit}</span>
+                                {product.stock <= product.minStock && product.stock > 0 && (
+                                    <span className="text-xs text-danger-red font-semibold mt-1">Low Stock</span>
+                                )}
+                                {isOutOfStock && (
+                                    <div className="absolute inset-0 bg-white/10 dark:bg-black/10 flex items-center justify-center">
+                                        <div className="bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-lg rotate-[-15deg] shadow-lg ring-2 ring-white">OUT OF STOCK</div>
+                                    </div>
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -212,12 +280,27 @@ export const BillingPage: React.FC = () => {
                                             <div className="font-bold text-lg text-gray-900 dark:text-white">₹{item.price * item.quantity}</div>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                                                <button onClick={() => decreaseQuantity(item._id!)} className="w-8 h-8 bg-white dark:bg-gray-600 rounded-md flex items-center justify-center text-gray-700 dark:text-white"><Minus size={16} /></button>
-                                                <span className="font-bold text-gray-900 dark:text-white min-w-[30px] text-center">{item.quantity}</span>
-                                                <button onClick={() => increaseQuantity(item._id!)} className="w-8 h-8 bg-white dark:bg-gray-600 rounded-md flex items-center justify-center text-gray-700 dark:text-white"><Plus size={16} /></button>
+                                            <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 pr-3">
+                                                <div className="flex items-center">
+                                                    <button onClick={() => decreaseQuantity(item._id!)} className="w-8 h-8 bg-white dark:bg-gray-600 rounded-md flex items-center justify-center text-gray-700 dark:text-white"><Minus size={16} /></button>
+                                                    <input
+                                                        type="number"
+                                                        value={item.quantity}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            const success = updateQuantity(item._id!, val, item.stock);
+                                                            if (!success) addToast(`Only ${item.stock} ${item.unit} available`, 'warning');
+                                                        }}
+                                                        className="w-16 bg-transparent text-center font-bold text-gray-900 dark:text-white border-none focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    />
+                                                    <button onClick={() => {
+                                                        const success = increaseQuantity(item._id!, item.stock);
+                                                        if (!success) addToast(`Only ${item.stock} ${item.unit} available`, 'warning');
+                                                    }} className="w-8 h-8 bg-white dark:bg-gray-600 rounded-md flex items-center justify-center text-gray-700 dark:text-white"><Plus size={16} /></button>
+                                                </div>
+                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{item.unit}</span>
                                             </div>
-                                            <button onClick={() => decreaseQuantity(item._id!)} className="text-danger-red p-2 rounded-lg"><Trash2 size={18} /></button>
+                                            <button onClick={() => removeFromCart(item._id!)} className="text-danger-red p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 size={18} /></button>
                                         </div>
                                     </div>
                                 ))}
@@ -236,21 +319,112 @@ export const BillingPage: React.FC = () => {
 
                     {/* Step 2: CUSTOMER */}
                     {checkoutStep === 'CUSTOMER' && (
-                        <div className="flex-1 p-6 flex flex-col justify-center max-w-md mx-auto w-full">
-                            <div className="text-center mb-8">
-                                <Phone className="text-primary-green mx-auto mb-4" size={48} />
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Identify Customer</h3>
-                                <p className="text-gray-500">Phone-based single source of truth (MongoDB)</p>
-                            </div>
-                            <input
-                                type="tel"
-                                placeholder="Phone number"
-                                maxLength={10}
-                                value={phoneNumber}
-                                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                                className="w-full border-2 border-gray-200 py-4 px-4 rounded-2xl text-2xl font-bold text-center focus:border-primary-green outline-none mb-6"
-                            />
-                            <button onClick={identifyCustomer} disabled={phoneNumber.length !== 10} className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg ${phoneNumber.length === 10 ? 'bg-primary-green text-white' : 'bg-gray-200 text-gray-400'}`}>Continue</button>
+                        <div className="flex-1 p-6 overflow-y-auto w-full max-w-xl mx-auto">
+                            {!isNewCustomer ? (
+                                <div className="space-y-6">
+                                    <div className="text-center">
+                                        <div className="bg-primary-green/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <User className="text-primary-green" size={40} />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">Select Customer</h3>
+                                        <p className="text-gray-500 dark:text-gray-400">Search by name or phone</p>
+                                    </div>
+
+                                    <div className="relative">
+                                        <Search className="absolute left-4 top-4 text-gray-400" size={20} />
+                                        <input
+                                            type="text"
+                                            placeholder="Type name or 10-digit phone..."
+                                            value={customerInput}
+                                            onChange={(e) => setCustomerInput(e.target.value)}
+                                            className="w-full bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 py-4 px-12 rounded-2xl text-lg font-bold text-gray-900 dark:text-white outline-none focus:border-primary-green transition-all shadow-sm"
+                                        />
+                                    </div>
+
+                                    {/* Quick Suggestions */}
+                                    <div className="space-y-2">
+                                        {filteredCustomers.map(cust => (
+                                            <button
+                                                key={cust._id}
+                                                onClick={() => identifyCustomer(cust)}
+                                                className="w-full flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-primary-green hover:shadow-md transition-all group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center font-bold text-gray-500 uppercase">
+                                                        {cust.name?.[0] || 'C'}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <div className="font-black text-gray-900 dark:text-white">{cust.name || 'Unnamed Customer'}</div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400 font-bold">+91 {cust.phoneNumber}</div>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight className="text-gray-300 group-hover:text-primary-green" />
+                                            </button>
+                                        ))}
+
+                                        {customerInput.length > 0 && filteredCustomers.length === 0 && (
+                                            <div className="text-center py-6 text-gray-400">
+                                                No matches found for "{customerInput}"
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="pt-4">
+                                        <button
+                                            onClick={() => {
+                                                setIsNewCustomer(true);
+                                                if (/^\d{10}$/.test(customerInput)) setPhoneNumber(customerInput);
+                                                else setCustomerName(customerInput);
+                                            }}
+                                            className="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-4 rounded-2xl font-black text-lg flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                        >
+                                            <Plus size={20} /> Register New Customer
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-6 animate-in fade-in slide-in-from-right duration-300">
+                                    <div className="text-center">
+                                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">New Customer</h3>
+                                        <p className="text-gray-500">Add to your shop network</p>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-xs font-black text-gray-400 uppercase ml-2 mb-1 block">Full Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Rahul Sharma"
+                                                value={customerName}
+                                                onChange={(e) => setCustomerName(e.target.value)}
+                                                className="w-full bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 py-4 px-6 rounded-2xl text-xl font-bold text-gray-900 dark:text-white outline-none focus:border-primary-green transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-black text-gray-400 uppercase ml-2 mb-1 block">Phone Number</label>
+                                            <input
+                                                type="tel"
+                                                placeholder="10-digit mobile"
+                                                maxLength={10}
+                                                value={phoneNumber}
+                                                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                                                className="w-full bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 py-4 px-6 rounded-2xl text-xl font-bold text-gray-900 dark:text-white outline-none focus:border-primary-green transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3 pt-4">
+                                        <button onClick={() => setIsNewCustomer(false)} className="flex-1 py-4 rounded-2xl font-black text-gray-500 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:bg-gray-100 transition-colors">Back</button>
+                                        <button
+                                            onClick={() => identifyCustomer()}
+                                            disabled={phoneNumber.length !== 10 || !customerName}
+                                            className={`flex-[2] py-4 rounded-2xl font-black text-lg shadow-lg transition-all ${phoneNumber.length === 10 && customerName ? 'bg-primary-green text-white shadow-green-200' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                                        >
+                                            Save & Pay
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -262,7 +436,7 @@ export const BillingPage: React.FC = () => {
                                     <User size={24} className="text-gray-600" />
                                     <div>
                                         <div className="font-bold text-gray-900 dark:text-white">+91 {selectedCustomer?.phoneNumber}</div>
-                                        <div className="text-xs text-gray-500">Cloud Account</div>
+                                        <div className="text-xs text-gray-500 font-medium">Digital Account</div>
                                     </div>
                                 </div>
                                 <div className={`px-4 py-2 rounded-xl border-2 text-center ${getLedgerColor(selectedCustomer?.khataBalance || 0)}`}>
@@ -289,11 +463,69 @@ export const BillingPage: React.FC = () => {
                 </div>
             )}
 
-            {showUpiModal && (
-                <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl">
-                        {upiProcessing ? <div className="w-20 h-20 border-8 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div> : <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"><span className="text-4xl">✅</span></div>}
-                        <h3 className="text-2xl font-bold">{upiProcessing ? 'Processing...' : 'Success!'}</h3>
+            {showStatusModal && (
+                <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-hidden">
+                    {/* Cash Flood Animation */}
+                    {animationType === 'cash' && isProcessing && (
+                        <div className="absolute inset-0 pointer-events-none">
+                            {[...Array(30)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="absolute animate-bounce text-4xl"
+                                    style={{
+                                        left: `${Math.random() * 100}%`,
+                                        top: `-10%`,
+                                        animationDuration: `${0.5 + Math.random() * 1.5}s`,
+                                        animationDelay: `${Math.random() * 2}s`,
+                                        transform: `rotate(${Math.random() * 360}deg)`
+                                    }}
+                                >
+                                    💵
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="bg-white dark:bg-gray-800 rounded-[3rem] p-10 max-w-sm w-full text-center shadow-2xl animate-in zoom-in duration-300 relative z-10">
+                        {isProcessing ? (
+                            <div className="space-y-6">
+                                <div className="relative w-28 h-28 mx-auto">
+                                    <div className={`absolute inset-0 border-8 ${animationType === 'online' ? 'border-purple-100 dark:border-purple-900' : animationType === 'cash' ? 'border-green-100 dark:border-green-900' : 'border-orange-100 dark:border-orange-900'} rounded-full`}></div>
+                                    <div className={`absolute inset-0 border-8 ${animationType === 'online' ? 'border-purple-600' : animationType === 'cash' ? 'border-green-600' : 'border-orange-600'} border-t-transparent rounded-full animate-spin`}></div>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <span className="text-4xl">
+                                            {animationType === 'online' ? '📱' : animationType === 'cash' ? '💰' : '📒'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-gray-900 dark:text-white">
+                                        {animationType === 'online' ? 'Verifying UPI...' : animationType === 'cash' ? 'Processing Cash...' : 'Updating Khata...'}
+                                    </h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mt-2 font-bold italic">Processing Order...</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="animate-in zoom-in duration-300">
+                                <div className="w-28 h-28 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-200">
+                                    <span className="text-6xl text-white">✓</span>
+                                </div>
+                                <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-2">Success!</h3>
+                                <p className="text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest text-xs">Payment Received</p>
+
+                                <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700">
+                                    <div className="text-4xl font-black text-gray-900 dark:text-white">₹{cartTotal}</div>
+                                    <div className="text-[10px] text-gray-400 font-bold mt-1 uppercase">Total Amount Paid</div>
+                                </div>
+
+                                <button
+                                    onClick={handleTransactionComplete}
+                                    className="mt-8 w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-transform"
+                                >
+                                    OK, NEXT BILL
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
