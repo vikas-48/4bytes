@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, AlertCircle } from 'lucide-react';
 import { ledgerApi, customerApi } from '../../services/api';
+import type { Customer } from '../../services/api';
 
 export const PaymentPage: React.FC = () => {
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [paymentAmount, setPaymentAmount] = useState(0);
@@ -42,8 +43,8 @@ export const PaymentPage: React.FC = () => {
     }
   };
 
-  const outstandingCustomers = customers.filter(c => c.khataBalance > 0);
-  const totalOutstanding = outstandingCustomers.reduce((sum, c) => sum + c.khataBalance, 0);
+  const outstandingCustomers = customers.filter(c => (c.khataBalance || 0) > 0);
+  const totalOutstanding = outstandingCustomers.reduce((sum, c) => sum + (c.khataBalance || 0), 0);
 
   return (
     <div className="space-y-4">
@@ -87,7 +88,7 @@ export const PaymentPage: React.FC = () => {
               <div className="text-xs text-gray-500">{customer.phoneNumber}</div>
             </div>
             <div className="text-right">
-              <div className="text-lg font-black text-red-500">₹{customer.khataBalance}</div>
+              <div className="text-lg font-black text-red-500">₹{customer.khataBalance || 0}</div>
             </div>
           </div>
         ))}

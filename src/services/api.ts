@@ -15,27 +15,37 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+export interface Customer {
+    _id: string;
+    phoneNumber: string;
+    name?: string;
+    email?: string;
+    khataBalance?: number;
+    isLocal?: boolean;
+}
+
 export const authApi = {
-    login: (data: any) => api.post('/auth/login', data),
-    register: (data: any) => api.post('/auth/register', data),
+    login: (data: Record<string, unknown>) => api.post('/auth/login', data),
+    register: (data: Record<string, unknown>) => api.post('/auth/register', data),
     getMe: () => api.get('/auth/me'),
 };
 
 export const productApi = {
     getAll: () => api.get('/products'),
-    create: (data: any) => api.post('/products', data),
-    update: (id: string, data: any) => api.patch(`/products/${id}`, data),
+    create: (data: Record<string, unknown>) => api.post('/products', data),
+    update: (id: string, data: Record<string, unknown>) => api.patch(`/products/${id}`, data),
 };
 
 export const customerApi = {
-    getAll: () => api.get('/customers'),
-    getByPhone: (phone: string) => api.get(`/customers/${phone}`),
-    create: (data: any) => api.post('/customers', data),
+    getAll: () => api.get<Customer[]>('/customers'),
+    getByPhone: (phone: string) => api.get<Customer>(`/customers/${phone}`),
+    search: (query: string) => api.get<Customer[]>(`/customers/search?q=${query}`),
+    create: (data: { phoneNumber: string; name?: string }) => api.post<Customer>('/customers', data),
 };
 
 export const billApi = {
     getAll: () => api.get('/bills'),
-    create: (data: { customerPhoneNumber: string; items: any[]; paymentType: string }) =>
+    create: (data: { customerPhoneNumber: string; items: Array<{ productId: string; quantity: number; price: number }>; paymentType: string }) =>
         api.post('/bills', data),
 };
 
@@ -47,7 +57,7 @@ export const ledgerApi = {
 
 export const groupBuyApi = {
     getAll: () => api.get('/group-buy'),
-    create: (data: any) => api.post('/group-buy', data),
+    create: (data: Record<string, unknown>) => api.post('/group-buy', data),
     join: (id: string, customerId: string) => api.patch(`/group-buy/${id}/join`, { customerId }),
 };
 
