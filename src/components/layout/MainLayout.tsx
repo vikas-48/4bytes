@@ -90,6 +90,51 @@ export const MainLayout: React.FC = () => {
                 </div>
             </header>
 
+            {/* Desktop Sidebar */}
+            <aside className={`hidden md:flex flex-col w-64 fixed left-0 top-[73px] bottom-0 z-20 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-r transition-all duration-300`}>
+                <nav className="flex-1 px-4 space-y-2 mt-6 overflow-y-auto custom-scrollbar">
+                    {navLinks.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                            <NavLink
+                                key={link.path}
+                                to={link.path}
+                                className={({ isActive }) =>
+                                    `flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${isActive
+                                        ? 'bg-primary-green text-white shadow-lg shadow-primary-green/20'
+                                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
+                                    }`
+                                }
+                            >
+                                {({ isActive }) => (
+                                    <>
+                                        <Icon size={20} className="group-hover:scale-110 transition-transform" />
+                                        <span className={`font-bold text-sm ${isActive ? 'text-white' : (darkMode ? 'text-gray-300' : 'text-gray-700')} transition-colors`}>
+                                            {link.label}
+                                        </span>
+                                    </>
+                                )}
+                            </NavLink>
+                        );
+                    })}
+                </nav>
+
+                <div className="p-4 mt-auto border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-3 mb-4 px-2">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary-green to-emerald-400 flex items-center justify-center text-white font-bold">
+                            {user?.name?.[0] || 'S'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-black truncate text-gray-900 dark:text-white">{user?.name || 'Owner'}</p>
+                            <div className="flex items-center gap-1">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] text-gray-500 font-bold">ONLINE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
             {/* Mobile Header */}
             <div className="flex-1 flex flex-col md:pl-64">
                 <header className={`md:hidden sticky top-0 z-40 w-full ${darkMode ? 'bg-[#0A0A0A]/80 border-white/5' : 'bg-white/80 border-gray-200'} backdrop-blur-md border-b px-4 py-3 flex justify-between items-center`}>

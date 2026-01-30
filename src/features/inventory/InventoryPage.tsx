@@ -87,9 +87,28 @@ export const InventoryPage: React.FC = () => {
                 </div>
             ) : (
                 <>
-                    <button onClick={() => setIsAdding(true)} className="w-full bg-white border-2 border-dashed border-primary-green text-primary-green p-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 mb-6 transition-colors">
-                        <Plus size={24} /> Add New Product
-                    </button>
+                    <div className="flex gap-4 mb-6">
+                        <button onClick={() => setIsAdding(true)} className="flex-1 bg-white border-2 border-dashed border-primary-green text-primary-green p-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors hover:bg-green-50">
+                            <Plus size={24} /> Add New Product
+                        </button>
+                        <button
+                            onClick={async () => {
+                                if (confirm('Add 20+ starter items to your inventory?')) {
+                                    try {
+                                        await productApi.seed();
+                                        alert('Inventory filled!');
+                                        loadProducts();
+                                    } catch (e) {
+                                        alert('Failed to seed');
+                                        console.error(e);
+                                    }
+                                }
+                            }}
+                            className="flex-1 bg-primary-green text-white p-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                        >
+                            <Save size={24} /> Fast Fill Inventory
+                        </button>
+                    </div>
                     <div className="space-y-3 pb-20">
                         {products.map(product => (
                             <div key={product._id} className="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center border border-gray-100">

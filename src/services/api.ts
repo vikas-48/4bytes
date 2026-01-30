@@ -34,6 +34,7 @@ export const productApi = {
     getAll: () => api.get('/products'),
     create: (data: Record<string, unknown>) => api.post('/products', data),
     update: (id: string, data: Record<string, unknown>) => api.patch(`/products/${id}`, data),
+    seed: () => api.post('/products/seed', {}),
 };
 
 export const customerApi = {
@@ -41,6 +42,7 @@ export const customerApi = {
     getByPhone: (phone: string) => api.get(`/customers/${phone}`),
     search: (query: string) => api.get(`/customers/search?q=${query}`),
     create: (data: any) => api.post('/customers', data),
+    seed: () => api.post('/customers/seed', {}),
     update: (id: string, data: any) => api.patch(`/customers/${id}`, data),
 };
 

@@ -120,6 +120,7 @@ export const BillingPage: React.FC = () => {
                     phoneNumber: phone,
                     name: name || customerData.name || 'Unnamed Customer',
                     khataScore: SCORE_DEFAULT,
+                    khataBalance: customerData.khataBalance || 0,
                     khataLimit: calculateKhataLimit(SCORE_DEFAULT),
                     activeKhataAmount: customerData.khataBalance || 0,
                     maxHistoricalKhataAmount: customerData.khataBalance || 0,

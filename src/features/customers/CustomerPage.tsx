@@ -249,7 +249,21 @@ export const CustomerPage: React.FC = () => {
         {filteredCustomers.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-700">
             <User size={48} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-gray-500">No customers found</p>
+            <p className="text-gray-500 mb-4">No customers found</p>
+            <button
+              onClick={async () => {
+                try {
+                  await customerApi.seed();
+                  loadCustomers();
+                } catch (e) {
+                  console.error(e);
+                  alert('Failed to seed customers');
+                }
+              }}
+              className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-bold hover:bg-blue-100"
+            >
+              Generate Demo Data
+            </button>
           </div>
         ) : (
           filteredCustomers.map((customer) => {
