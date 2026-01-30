@@ -18,10 +18,10 @@ router.post('/', auth, async (req, res) => {
         const { customerPhoneNumber, items, paymentType } = req.body;
 
         // 1. Find or Create Customer
-        let customer = await Customer.findOne({ phoneNumber: customerPhoneNumber });
+        let customer = await Customer.findOne({ phoneNumber: customerPhoneNumber }).session(session);
         if (!customer) {
             customer = new Customer({ phoneNumber: customerPhoneNumber });
-            await customer.save();
+            await customer.save({ session });
         }
 
         let totalAmount = 0;
@@ -29,13 +29,13 @@ router.post('/', auth, async (req, res) => {
 
         // 2. Validate Stock and Calculate Total
         for (const item of items) {
-            const product = await Product.findById(item.productId);
+            const product = await Product.findById(item.productId).session(session);
             if (!product) throw new Error(`Product ${item.productId} not found`);
             if (product.stock < item.quantity) throw new Error(`Insufficient stock for ${product.name}`);
 
             // Reduce Stock
             product.stock -= item.quantity;
-            await product.save();
+            await product.save({ session });
 
             totalAmount += product.price * item.quantity;
             processedItems.push({
@@ -54,7 +54,7 @@ router.post('/', auth, async (req, res) => {
             totalAmount,
             paymentType
         });
-        await bill.save();
+        await bill.save({ session });
 
         // 4. Handle Ledger if applicable
         if (paymentType === 'ledger') {
@@ -66,7 +66,7 @@ router.post('/', auth, async (req, res) => {
                 type: 'debit',
                 status: 'pending'
             });
-            await ledgerEntry.save();
+            await ledgerEntry.save({ session });
 
             // Update customer running dues (shop-specific)
             let account = await CustomerAccount.findOne({
@@ -86,10 +86,14 @@ router.post('/', auth, async (req, res) => {
             await account.save({ session });
         }
 
+        await session.commitTransaction();
         res.status(201).json(bill);
     } catch (err: any) {
+        await session.abortTransaction();
         console.error('Bill Creation Error:', err.message);
         res.status(400).json({ message: err.message });
+    } finally {
+        session.endSession();
     }
 });
 

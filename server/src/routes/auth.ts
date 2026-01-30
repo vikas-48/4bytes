@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import passport from 'passport';
 import { User } from '../models/User.js';
 import { Product } from '../models/Product.js';
+import { GlobalProduct } from '../models/GlobalProduct.js';
 import { starterProducts } from '../utils/starterProducts.js';
 
 const router = express.Router();
@@ -32,10 +33,23 @@ router.post('/register', async (req, res) => {
         const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
 
         // Seed initial products for the new shopkeeper
-        const initialProducts = starterProducts.map(p => ({
-            ...p,
-            shopkeeperId: user._id
+        let sourceProducts: any[] = await GlobalProduct.find().lean();
+
+        if (sourceProducts.length === 0) {
+            console.log('No GlobalProducts found in DB, falling back to starterProducts file');
+            sourceProducts = starterProducts;
+        }
+
+        const initialProducts = sourceProducts.map(p => ({
+            shopkeeperId: user._id,
+            name: p.name,
+            price: p.price,
+            stock: p.stock,
+            category: p.category,
+            unit: p.unit,
+            icon: p.icon
         }));
+
         await Product.insertMany(initialProducts);
 
         res.status(201).json({ token, user: { id: user._id, name: user.name, username: user.username, email: user.email } });

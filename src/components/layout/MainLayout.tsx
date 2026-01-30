@@ -102,7 +102,7 @@ export const MainLayout: React.FC = () => {
             {showMenu && (
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border-b max-h-96 overflow-y-auto z-30`}>
                     <div className="p-4 space-y-2">
-                        {navLinks.map((link) => {
+                        {navLinks.slice(4).map((link) => {
                             const Icon = link.icon;
                             return (
                                 <NavLink

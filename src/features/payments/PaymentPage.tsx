@@ -30,7 +30,8 @@ export const PaymentPage: React.FC = () => {
     try {
       await ledgerApi.recordPayment({
         customerId: selectedCustomerId,
-        amount: paymentAmount
+        amount: paymentAmount,
+        paymentMode: 'cash'
       });
       setPaymentAmount(0);
       setSelectedCustomerId('');

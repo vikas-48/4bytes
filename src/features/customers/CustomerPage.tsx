@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Phone, User, Calendar, History, AlertCircle } from 'lucide-react';
+import { Plus, Search, Phone, User, History, AlertCircle } from 'lucide-react';
 import { customerApi, ledgerApi } from '../../services/api';
 import { db } from '../../db/db';
 import { getKhataStatus, recalculateKhataScore } from '../../lib/khataLogic';
@@ -162,14 +162,7 @@ export const CustomerPage: React.FC = () => {
     setCustomerTransactions(transactions.sort((a, b) => b.createdAt - a.createdAt));
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'No visits yet';
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
+
 
   const filteredCustomers = customers.filter(
     c => (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -504,8 +497,8 @@ export const CustomerPage: React.FC = () => {
                         key={tab}
                         onClick={() => setTxFilter(tab)}
                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${txFilter === tab
-                            ? 'bg-white dark:bg-gray-700 text-primary-green shadow-sm'
-                            : 'text-gray-400 hover:text-gray-600'
+                          ? 'bg-white dark:bg-gray-700 text-primary-green shadow-sm'
+                          : 'text-gray-400 hover:text-gray-600'
                           }`}
                       >
                         {tab === 'all' ? 'All' : tab === 'khata' ? 'Khata Debt' : tab === 'settlement' ? 'Settlements' : 'Instant Paid'}
